@@ -11,13 +11,13 @@
 class Shape;
 class Program;
 class MatrixStack;
-struct Joint;
+class Joint;
 
 typedef Eigen::Matrix<double, 6, 1> Vector6d;
 typedef Eigen::Matrix<double, 6, 6> Matrix6d;
 typedef Eigen::Matrix<double, 3, 6> Matrix3x6d;
 typedef Eigen::Matrix<double, 6, 3> Matrix6x3d;
-
+typedef Eigen::Matrix<double, 5, 6> Matrix5x6d;
 
 class Rigid
 {
@@ -33,18 +33,23 @@ public:
 	void computeForces();
 
 	// set
+	void setIndex(int _i);
 	void setP(Eigen::Vector3d p);
 	void setR(Eigen::Matrix3d R);
 	void setTwist(Vector6d _twist);
 	void setForce(Vector6d _force);
-
+	void setParent(std::shared_ptr<Rigid> _parent);
+	void addChild(std::shared_ptr<Rigid> _child);
 	// get
 	Eigen::Vector3d getP() const;
 	Eigen::Matrix3d getR() const;
 	Matrix6d getMassMatrix() const;
 	Vector6d getTwist() const;
 	Vector6d getForce() const;
-
+	std::shared_ptr<Joint> getJoint() const;
+	Eigen::Matrix4d getE() const;
+	std::shared_ptr<Rigid> getParent() const;
+	int getIndex() const;
 
 	static Eigen::Matrix4d inverse(const Eigen::Matrix4d &E);
 	static Matrix3x6d gamma(const Eigen::Vector3d &r);
@@ -57,12 +62,10 @@ public:
 
 	double r; // radius
 	double m; // mass
-	int i;  // index
+	
 	
 	Eigen::Vector3d dimension;
-	bool fixed;	
-	Eigen::Vector3d grav;
-	
+	Eigen::Vector3d grav;	
 
 private:
 	const std::shared_ptr<Shape> box;
@@ -74,7 +77,6 @@ private:
 	Matrix6d mass_mat;
 	Vector6d twist;
 	Vector6d force;
-
+	int i;  // index
 };
-
 #endif

@@ -15,6 +15,7 @@ class Program;
 class Shape;
 class Rigid;
 class Solver;
+class Joint;
 
 class Scene
 {

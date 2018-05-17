@@ -21,7 +21,6 @@ Rigid::Rigid(const shared_ptr<Shape> s, Matrix3d _R, Vector3d _p, Vector3d _dime
 	r(_r),
 	m(_m),
 	i(-1),
-	fixed(false),
 	box(s),
 	dimension(_dimension),
 	grav(0.0, -9.8, 0.0)
@@ -44,6 +43,9 @@ Rigid::Rigid(const shared_ptr<Shape> s, Matrix3d _R, Vector3d _p, Vector3d _dime
 					  0, 0, 0, m, 0, 0,
 					  0, 0, 0, 0, m, 0,
 					  0, 0, 0, 0, 0, m;
+	
+	this->joint = make_shared<Joint>();
+
 }
 
 void Rigid::tare()
@@ -62,6 +64,13 @@ void Rigid::step(double h) {
 
 	// Position Update
 	E_W_0 = integrate(E_W_0, twist, h);
+
+	// Joint Update
+	if (i != 0) {
+		Matrix4d E_C_J = getE().inverse() * parent->getE() * joint->getE_P_J();
+		joint->setE_C_J(E_C_J);
+	}
+	
 }
 
 void Rigid::draw(shared_ptr<MatrixStack> MV, const shared_ptr<Program> prog) const
@@ -222,8 +231,23 @@ Vector6d Rigid::getTwist() const {
 }
 
 Vector6d Rigid::getForce() const {
-
 	return force;
+}
+
+shared_ptr<Joint> Rigid::getJoint() const {
+	return joint;
+}
+
+Matrix4d Rigid::getE() const {
+	return E_W_0;
+}
+
+shared_ptr<Rigid> Rigid::getParent() const {
+	return parent;
+}
+
+int Rigid::getIndex() const {
+	return i;
 }
 
 // set
@@ -241,6 +265,18 @@ void Rigid::setTwist(Vector6d _twist) {
 
 void Rigid::setForce(Vector6d _force) {
 	force = _force;
+}
+
+void Rigid::setIndex(int _i) {
+	i = _i;
+}
+
+void Rigid::setParent(shared_ptr<Rigid> _parent) {
+	parent = _parent;
+}
+
+void Rigid::addChild(shared_ptr<Rigid> _child) {
+	children.push_back(_child);
 }
 
 Rigid::~Rigid()

@@ -1,5 +1,8 @@
 #pragma once
 
+#include <vector>
+#include <memory>
+
 #define EIGEN_DONT_ALIGN_STATICALLY
 #include <Eigen/Dense>
 

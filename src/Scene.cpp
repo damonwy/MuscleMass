@@ -6,6 +6,7 @@
 #include "Program.h"
 #include "Rigid.h"
 #include "Solver.h"
+#include "Joint.h"
 
 using namespace std;
 using namespace Eigen;
@@ -15,7 +16,6 @@ Scene::Scene() :
 	h(1e-2),
 	grav(0.0, 0.0, 0.0)
 {
-
 }
 
 Scene::~Scene()
@@ -42,8 +42,26 @@ void Scene::load(const string &RESOURCE_DIR)
 	double scale = 1.0;
 	double mass = 8.0; 
 
-	auto box = make_shared<Rigid>(boxShape, R, p, dimension, scale, mass);
-	boxes.push_back(box);
+	auto box0 = make_shared<Rigid>(boxShape, R, p, dimension, scale, mass);
+	box0->setIndex(0);
+	boxes.push_back(box0);
+	
+
+	p = Vector3d(4.0, 0.0, 0.0);
+	auto box1 = make_shared<Rigid>(boxShape, R, p, dimension, scale, mass);
+	box1->setIndex(1);
+	box1->setParent(box0);
+	//box0->addChild(box1);
+	boxes.push_back(box1);
+
+	auto joint = box1->getJoint();
+	Matrix4d E_P_J;
+	E_P_J.setIdentity();
+	E_P_J(1, 3) = -2.0;
+	Matrix4d E_C_J = box1->getE().inverse() * box0->getE() * E_P_J;
+
+	joint->setE_P_J(E_P_J);
+	joint->setE_C_J(E_C_J);
 
 	// Init solver
 	solver = make_shared<Solver>(boxes);
@@ -53,7 +71,6 @@ void Scene::load(const string &RESOURCE_DIR)
 void Scene::init()
 {
 	boxShape->init();
-	
 }
 
 void Scene::tare()
