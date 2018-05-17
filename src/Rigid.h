@@ -11,24 +11,40 @@
 class Shape;
 class Program;
 class MatrixStack;
+struct Joint;
 
 typedef Eigen::Matrix<double, 6, 1> Vector6d;
 typedef Eigen::Matrix<double, 6, 6> Matrix6d;
 typedef Eigen::Matrix<double, 3, 6> Matrix3x6d;
 typedef Eigen::Matrix<double, 6, 3> Matrix6x3d;
 
+
 class Rigid
 {
 public:
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-	Rigid();
-	Rigid(const std::shared_ptr<Shape> shape);
+	Rigid(const std::shared_ptr<Shape> shape, Eigen::Matrix3d _R, Eigen::Vector3d _p, Eigen::Vector3d _dimension, double _r, double _m);
 	virtual ~Rigid();
 	void tare();
 	void reset();
 	void step(double h);
 	void draw(std::shared_ptr<MatrixStack> MV, const std::shared_ptr<Program> p) const;
+	void computeForces();
+
+	// set
+	void setP(Eigen::Vector3d p);
+	void setR(Eigen::Matrix3d R);
+	void setTwist(Vector6d _twist);
+	void setForce(Vector6d _force);
+
+	// get
+	Eigen::Vector3d getP() const;
+	Eigen::Matrix3d getR() const;
+	Matrix6d getMassMatrix() const;
+	Vector6d getTwist() const;
+	Vector6d getForce() const;
+
 
 	static Eigen::Matrix4d inverse(const Eigen::Matrix4d &E);
 	static Matrix3x6d gamma(const Eigen::Vector3d &r);
@@ -42,12 +58,23 @@ public:
 	double r; // radius
 	double m; // mass
 	int i;  // index
-	Vector6d twist;
-
+	
+	Eigen::Vector3d dimension;
 	bool fixed;	
+	Eigen::Vector3d grav;
+	
 
 private:
 	const std::shared_ptr<Shape> box;
+	std::shared_ptr<Rigid> parent;
+	std::vector< std::shared_ptr<Rigid> > children;
+	std::shared_ptr<Joint> joint;
+	Eigen::Matrix4d E_W_0; // Where current transform is wrt world
+	Eigen::Matrix4d E_W_0_0; // Where current transform is wrt world at the start
+	Matrix6d mass_mat;
+	Vector6d twist;
+	Vector6d force;
+
 };
 
 #endif

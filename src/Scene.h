@@ -14,6 +14,7 @@ class MatrixStack;
 class Program;
 class Shape;
 class Rigid;
+class Solver;
 
 class Scene
 {
@@ -40,6 +41,7 @@ private:
 	
 	std::shared_ptr<Shape> boxShape;
 	std::vector< std::shared_ptr<Rigid> > boxes;
+	std::shared_ptr<Solver> solver;
 };
 
 #endif

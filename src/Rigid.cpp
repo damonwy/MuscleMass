@@ -1,5 +1,5 @@
 #include <iostream>
-
+#include <math.h> // atan
 #define GLEW_STATIC
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
@@ -9,6 +9,7 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #include "Rigid.h"
+#include "Joint.h"
 #include "Shape.h"
 #include "Program.h"
 #include "MatrixStack.h"
@@ -16,27 +17,33 @@
 using namespace std;
 using namespace Eigen;
 
-Rigid::Rigid() :
-	r(1.0),
-	m(1.0),
-	i(-1),
-	fixed(false)
-{
-
-}
-
-Rigid::Rigid(const shared_ptr<Shape> s) :
-	r(1.0),
-	m(1.0),
+Rigid::Rigid(const shared_ptr<Shape> s, Matrix3d _R, Vector3d _p, Vector3d _dimension, double _r, double _m) :
+	r(_r),
+	m(_m),
 	i(-1),
 	fixed(false),
-	box(s)
+	box(s),
+	dimension(_dimension),
+	grav(0.0, -9.8, 0.0)
 {
-	twist.setZero();
-}
+	this->twist.setZero();
+	this->force.setZero();
 
-Rigid::~Rigid()
-{
+	E_W_0.setZero();
+	E_W_0(3, 3) = 1.0;
+	setP(_p);
+	setR(_R);
+
+	mass_mat.setZero();
+	double d0 = dimension(0);
+	double d1 = dimension(1);
+	double d2 = dimension(2);
+	this->mass_mat << m / 12.0 * (d1 * d1 + d2 * d2), 0, 0, 0, 0, 0,
+					  0, m / 12.0 * (d0 * d0 + d2 * d2), 0, 0, 0, 0,
+					  0, 0, m / 12.0 * (d1 * d1 + d0 * d0), 0, 0, 0,
+					  0, 0, 0, m, 0, 0,
+					  0, 0, 0, 0, m, 0,
+					  0, 0, 0, 0, 0, m;
 }
 
 void Rigid::tare()
@@ -47,17 +54,32 @@ void Rigid::tare()
 void Rigid::reset()
 {
 	twist.setZero();
+	E_W_0 = E_W_0_0;
 }
 
 void Rigid::step(double h) {
+	computeForces();
 
+	// Position Update
+	E_W_0 = integrate(E_W_0, twist, h);
 }
 
 void Rigid::draw(shared_ptr<MatrixStack> MV, const shared_ptr<Program> prog) const
 {
 	if (box) {
 		MV->pushMatrix();
-		//MV->translate(x(0), x(1), x(2));
+		Vector3d x = getP();
+		MV->translate(x(0), x(1), x(2));
+		
+		// Decompose R into 3 Euler angles
+		Matrix3d R = getR();
+		double theta_x = atan2(R(2, 1), R(2, 2));
+		double theta_y = atan2(-R(2, 0), sqrt(pow(R(2, 1), 2) + pow(R(2, 2), 2)));
+		double theta_z = atan2(R(1, 0), R(0, 0));
+		MV->rotate(theta_x, 1.0f, 0.0f, 0.0f);
+		MV->rotate(theta_y, 0.0f, 1.0f, 0.0f);
+		MV->rotate(theta_z, 0.0f, 0.0f, 1.0f);
+
 		MV->scale(r);
 		glUniformMatrix4fv(prog->getUniform("MV"), 1, GL_FALSE, glm::value_ptr(MV->topMatrix()));
 		box->draw(prog);
@@ -167,4 +189,60 @@ Matrix4d Rigid::integrate(const Matrix4d &E0, const VectorXd &phi, double h)
 		//cout << phib << endl;
 	}
 	return E0 * phib;
+}
+
+void Rigid::computeForces() {
+	Matrix6d twist_bracket;
+	twist_bracket.setZero();
+	twist_bracket.block<3, 3>(0, 0) = bracket3(twist.segment<3>(0));
+	twist_bracket.block<3, 3>(3, 3) = bracket3(twist.segment<3>(0));
+
+	Vector6d coriolis_forces = twist_bracket.transpose() * mass_mat * twist;
+	Vector6d body_forces;
+	body_forces.setZero();
+	body_forces.segment<3>(3) = m * getR().transpose() * grav;
+	force = coriolis_forces + body_forces;
+}
+
+// get
+Eigen::Vector3d Rigid::getP() const {
+	return E_W_0.block<3, 1>(0, 3);
+}
+
+Eigen::Matrix3d Rigid::getR() const {
+	return E_W_0.block<3, 3>(0, 0);
+}
+
+Matrix6d Rigid::getMassMatrix() const {
+	return mass_mat;
+}
+
+Vector6d Rigid::getTwist() const {
+	return twist;
+}
+
+Vector6d Rigid::getForce() const {
+
+	return force;
+}
+
+// set
+void Rigid::setP(Eigen::Vector3d p) {
+	E_W_0.block<3, 1>(0, 3) = p;
+}
+
+void Rigid::setR(Eigen::Matrix3d R) {
+	E_W_0.block<3, 3>(0, 0) = R;
+}
+
+void Rigid::setTwist(Vector6d _twist) {
+	twist = _twist;
+}
+
+void Rigid::setForce(Vector6d _force) {
+	force = _force;
+}
+
+Rigid::~Rigid()
+{
 }

@@ -119,6 +119,7 @@ static void init()
 	//prog->setVerbose(false);
 	
 	camera = make_shared<Camera>();
+	camera->setInitDistance(30.0f);
 
 	scene = make_shared<Scene>();
 	scene->load(RESOURCE_DIR);
@@ -169,10 +170,10 @@ void render()
 	glUniformMatrix4fv(progSimple->getUniform("P"), 1, GL_FALSE, glm::value_ptr(P->topMatrix()));
 	glUniformMatrix4fv(progSimple->getUniform("MV"), 1, GL_FALSE, glm::value_ptr(MV->topMatrix()));
 	glLineWidth(2.0f);
-	float x0 = -0.5f;
-	float x1 = 0.5f;
-	float z0 = -0.5f;
-	float z1 = 0.5f;
+	float x0 = -10.0f;
+	float x1 = 10.0f;
+	float z0 = -10.0f;
+	float z1 = 10.0f;
 	int gridSize = 10;
 	glLineWidth(1.0f);
 	glBegin(GL_LINES);
@@ -250,7 +251,7 @@ int main(int argc, char **argv)
 		return -1;
 	}
 	// Create a windowed mode window and its OpenGL context.
-	window = glfwCreateWindow(640, 480, "YOUR NAME", NULL, NULL);
+	window = glfwCreateWindow(640, 480, "Muscle Mass Simulation", NULL, NULL);
 	if(!window) {
 		glfwTerminate();
 		return -1;
