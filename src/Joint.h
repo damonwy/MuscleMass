@@ -17,8 +17,11 @@ private:
 public:
 	Eigen::Matrix4d getE_P_J() const;
 	Eigen::Matrix4d getE_C_J() const;
+	double getTheta() const;
+
 	void setE_C_J(Eigen::Matrix4d _E_C_J);
 	void setE_P_J(Eigen::Matrix4d _E_P_J);
+	void setTheta(double _theta);
 
 	Joint();
 	~Joint();

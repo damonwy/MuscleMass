@@ -1,6 +1,7 @@
 #pragma once
-#ifndef __Rigid__
-#define __Rigid__
+
+#ifndef MUSCLEMASS_SRC_RIGID_H_
+#define MUSCLEMASS_SRC_RIGID_H_
 
 #include <vector>
 #include <memory>
@@ -23,8 +24,8 @@ class Rigid
 {
 public:
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-
-	Rigid(const std::shared_ptr<Shape> shape, Eigen::Matrix3d _R, Eigen::Vector3d _p, Eigen::Vector3d _dimension, double _r, double _m);
+		Rigid();
+	Rigid(const std::shared_ptr<Shape> shape, Eigen::Matrix3d _R, Eigen::Vector3d _p, Eigen::Vector3d _dimension, double _r, double _m, bool _isReduced);
 	virtual ~Rigid();
 	void tare();
 	void reset();
@@ -40,6 +41,8 @@ public:
 	void setForce(Vector6d _force);
 	void setParent(std::shared_ptr<Rigid> _parent);
 	void addChild(std::shared_ptr<Rigid> _child);
+	void setJointAngle(double _theta);
+
 	// get
 	Eigen::Vector3d getP() const;
 	Eigen::Matrix3d getR() const;
@@ -62,7 +65,7 @@ public:
 
 	double r; // radius
 	double m; // mass
-	
+	bool isReduced; 
 	
 	Eigen::Vector3d dimension;
 	Eigen::Vector3d grav;	
@@ -79,4 +82,4 @@ private:
 	Vector6d force;
 	int i;  // index
 };
-#endif
+#endif // MUSCLEMASS_SRC_RIGID_H_

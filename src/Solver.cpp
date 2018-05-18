@@ -1,6 +1,7 @@
 #include "Solver.h"
 #include "Rigid.h"
 #include "Joint.h"
+#include "MatlabDebug.h"
 
 #include <iostream>
 
@@ -38,7 +39,13 @@ Solver::Solver(vector< shared_ptr<Rigid> > _boxes, bool _isReduced) {
 void Solver::step(double h) {
 	// Solve linear system
 	if (isReduced) {
-		int j = 0;
+		int j = 6;
+
+		// Rotate about Z axis
+		Vector6d z;
+		z.setZero();
+		z(2) = 1.0;
+
 		for (int i = 0; i < (int)boxes.size(); i++) {
 			auto box = boxes[i];
 
@@ -50,20 +57,28 @@ void Solver::step(double h) {
 				I.setIdentity();
 				J.block<6, 6>(0, 0) = I;
 			}
-			else {
+			else if (i == 1) {
 				auto joint = box->getJoint();
-				Matrix6d Ad_C_W = Rigid::adjoint(box->getE().inverse());
-				Matrix6d Ad_W_P = Rigid::adjoint(box->getParent()->getE());
-				Matrix6d Ad_C_P = Ad_C_W * Ad_W_P;
-
-
+				Matrix6d Ad_C_J = Rigid::adjoint(joint->getE_C_J());
 				Matrix6d Ad_J_P = Rigid::adjoint(joint->getE_P_J().inverse());
-				Matrix6d Ad_J_C = -Rigid::adjoint(joint->getE_C_J().inverse());
-				int id_P = box->getParent()->getIndex();
-				int id_C = box->getIndex();
+				Matrix6d Ad_C_P = Ad_C_J * Ad_J_P; 
+				Vector6d Adz_C_J = Ad_C_J * z;
 
+				J.block<6, 6>(j, 0) = Ad_C_P;
+				J.block<6, 1>(j, 5+i) = Adz_C_J;
+				j = j + 6;
 			}
+			else{
+				auto joint = box->getJoint();
+				Matrix6d Ad_C_J = Rigid::adjoint(joint->getE_C_J());
+				Matrix6d Ad_J_P = Rigid::adjoint(joint->getE_P_J().inverse());
+				Vector6d Adz_C_J = Ad_C_J * z;
+				Matrix6d Ad_C_P = Ad_C_J * Ad_J_P;
 
+				J.block(j, 0, 6, 4+i) = Ad_C_P * J.block(j - 6, 0, 6, 4 + i);
+				J.block<6, 1>(j, 5 + i) = Adz_C_J;
+				j = j + 6;
+			}
 		}
 
 		A = J.transpose() * M * J;
@@ -71,10 +86,16 @@ void Solver::step(double h) {
 		x = A.ldlt().solve(b);
 
 		// Update Boxes
-		VectorXd phi = J.transpose() * x;
+		VectorXd phi = J * x;
+
 		for (int i = 0; i < (int)boxes.size(); i++) {
 			auto box = boxes[i];
-			box->setTwist(phi.segment<6>(6 * i));
+			if (i != 0) {
+				// Update joint angles
+				box->setJointAngle(h * x(5 + i)); 	
+				// Don't forget to update twists as well, we will use it to compute forces
+				box->setTwist(phi.segment<6>(6 * i));
+			}
 		}
 	}
 	else {
@@ -85,7 +106,6 @@ void Solver::step(double h) {
 			A.block<6, 6>(6 * i, 6 * i) = box->getMassMatrix();
 			b.segment<6>(6 * i) = box->getMassMatrix() * box->getTwist() + h * box->getForce();
 
-			//
 			if (i == 0) {
 				Matrix6d I;
 				I.setIdentity();

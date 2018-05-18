@@ -1,6 +1,6 @@
 #pragma once
-#ifndef __Scene__
-#define __Scene__
+#ifndef MUSCLEMASS_SRC_SCENE_H_
+#define MUSCLEMASS_SRC_SCENE_H_
 
 #include <vector>
 #include <memory>
@@ -45,4 +45,4 @@ private:
 	std::shared_ptr<Solver> solver;
 };
 
-#endif
+#endif // MUSCLEMASS_SRC_SCENE_H_

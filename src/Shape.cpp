@@ -111,21 +111,21 @@ void Shape::draw(const shared_ptr<Program> prog) const
 	}
 	
 	// Bind texcoords buffer
-	int h_tex = prog->getAttribute("aTex");
+	/*int h_tex = prog->getAttribute("aTex");
 	if(h_tex != -1 && texBufID != 0) {
 		glEnableVertexAttribArray(h_tex);
 		glBindBuffer(GL_ARRAY_BUFFER, texBufID);
 		glVertexAttribPointer(h_tex, 2, GL_FLOAT, GL_FALSE, 0, (const void *)0);
-	}
+	}*/
 	
 	// Draw
 	int count = posBuf.size()/3; // number of indices to be rendered
 	glDrawArrays(GL_TRIANGLES, 0, count);
 	
 	// Disable and unbind
-	if(h_tex != -1) {
+	/*if(h_tex != -1) {
 		glDisableVertexAttribArray(h_tex);
-	}
+	}*/
 	if(h_nor != -1) {
 		glDisableVertexAttribArray(h_nor);
 	}

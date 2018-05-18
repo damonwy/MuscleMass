@@ -17,13 +17,18 @@
 using namespace std;
 using namespace Eigen;
 
-Rigid::Rigid(const shared_ptr<Shape> s, Matrix3d _R, Vector3d _p, Vector3d _dimension, double _r, double _m) :
+Rigid::Rigid() {
+
+}
+
+Rigid::Rigid(const shared_ptr<Shape> s, Matrix3d _R, Vector3d _p, Vector3d _dimension, double _r, double _m, bool _isReduced) :
 	r(_r),
 	m(_m),
 	i(-1),
 	box(s),
 	dimension(_dimension),
-	grav(0.0, -9.8, 0.0)
+	grav(0.0, -9.8, 0.0),
+	isReduced(_isReduced)
 {
 	this->twist.setZero();
 	this->force.setZero();
@@ -61,9 +66,34 @@ void Rigid::reset()
 
 void Rigid::step(double h) {
 	computeForces();
-
+	isReduced = true;
 	// Position Update
-	E_W_0 = integrate(E_W_0, twist, h);
+	if (isReduced) {
+		// Use reduced positions
+		if (i != 0) {
+			Matrix4d E_J_C = joint->getE_C_J().inverse();
+
+			double theta = joint->getTheta();
+			//cout << "theta" << theta << endl;
+
+			Matrix4d R;
+			R.setIdentity();
+			R.block<2, 2>(0, 0) << cos(theta), -sin(theta),
+				sin(theta), cos(theta);
+
+			Matrix4d E_P_J = joint->getE_P_J();
+			Matrix4d E_W_P = parent->getE();
+			Matrix4d E_W_C = E_W_P * E_P_J * R * E_J_C;
+			E_W_0 = E_W_C;
+		}
+	}
+	else {
+		// Use maximal coordinate
+		if (i != 0) {
+			E_W_0 = integrate(E_W_0, twist, h);
+		}
+		
+	}
 
 	// Joint Update
 	if (i != 0) {
@@ -273,6 +303,10 @@ void Rigid::setIndex(int _i) {
 
 void Rigid::setParent(shared_ptr<Rigid> _parent) {
 	parent = _parent;
+}
+
+void Rigid::setJointAngle(double _theta) {
+	joint->setTheta(_theta);
 }
 
 void Rigid::addChild(shared_ptr<Rigid> _child) {
