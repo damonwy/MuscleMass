@@ -22,6 +22,8 @@ Scene::~Scene()
 {
 }
 
+
+
 void Scene::load(const string &RESOURCE_DIR)
 {
 	// Units: meters, kilograms, seconds
@@ -54,12 +56,12 @@ void Scene::load(const string &RESOURCE_DIR)
 	//box0->addChild(box1);
 	boxes.push_back(box1);
 
-	p += Vector3d(4.0, 0.0, 0.0);
-	auto box2 = make_shared<Rigid>(boxShape, R, p, dimension, scale, mass, isReduced);
-	box2->setIndex(2);
-	box2->setParent(box1);
-	//box1->addChild(box2);
-	boxes.push_back(box2);
+	//p += Vector3d(4.0, 0.0, 0.0);
+	//auto box2 = make_shared<Rigid>(boxShape, R, p, dimension, scale, mass, isReduced);
+	//box2->setIndex(2);
+	//box2->setParent(box1);
+	////box1->addChild(box2);
+	//boxes.push_back(box2);
 
 	// Init joints
 	auto joint1 = box1->getJoint();
@@ -71,15 +73,16 @@ void Scene::load(const string &RESOURCE_DIR)
 	joint1->setE_P_J(E_P_J);
 	joint1->setE_C_J(E_C_J);
 
-	auto joint2 = box2->getJoint();
-	E_C_J = box2->getE().inverse() * box1->getE() * E_P_J;
+	//auto joint2 = box2->getJoint();
+	//E_C_J = box2->getE().inverse() * box1->getE() * E_P_J;
 
-	joint2->setE_P_J(E_P_J);
-	joint2->setE_C_J(E_C_J);
+	//joint2->setE_P_J(E_P_J);
+	//joint2->setE_C_J(E_C_J);
 
 
 	// Init solver
-	solver = make_shared<Solver>(boxes, isReduced);
+	Integrator time_integrator = RKF45;
+	solver = make_shared<Solver>(boxes, isReduced, time_integrator);
 
 }
 
@@ -106,10 +109,14 @@ void Scene::reset()
 void Scene::step()
 {
 	t += h;
-	solver->step(h);
+	//solver->step(h);
+	double y[2] = {0.0, 0.0};
+	double yp[2];
+
+	solver->solve(y, yp, 2);
 
 	for (int i = 0; i < (int)boxes.size(); ++i) {
-		boxes[i]->step(h);
+		//boxes[i]->step(h);
 	}
 }
 

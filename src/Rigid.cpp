@@ -62,6 +62,7 @@ void Rigid::reset()
 {
 	twist.setZero();
 	E_W_0 = E_W_0_0;
+	setJointAngle(0.0);
 }
 
 void Rigid::step(double h) {
