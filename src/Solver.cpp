@@ -3,7 +3,6 @@
 #include "Joint.h"
 #include "MatlabDebug.h"
 
-
 #include <iostream>
 #include <iomanip>
 
@@ -22,10 +21,9 @@ num_joints(_boxes.size() - 1)
 	this->boxes = _boxes;
 	this->isReduced = _isReduced;
 	this->time_integrator = _time_integrator;
-	double n;
 
 	if (isReduced) {
-		double m = 6 * (int)boxes.size();
+		m = 6 * (int)boxes.size();
 		n = 6 + 1 * ((int)boxes.size() - 1);
 		M.resize(m, m);
 		J.resize(m, n);
@@ -61,7 +59,6 @@ void Solver::dynamics(double t, double y[], double yp[])
 //
 //	Output, double YP[NEQN], the value of the derivative dY(1:NEQN)/dT: thetadot1, thetadot2, thetaddot1, thetaddot2..
 //
-
 {
 	// Unpack input y[]
 	VectorXd theta, thetadot;
@@ -78,12 +75,10 @@ void Solver::dynamics(double t, double y[], double yp[])
 		auto box = boxes[i];
 		if (i != 0) {
 			box->reset();
-			box->setJointAngle(theta(i - 1));
-		
+			box->setJointAngle(theta(i - 1));	
 			box->step(1.0);
 		}
 	}
-
 
 	// Solve linear system
 	if (isReduced) {
@@ -98,7 +93,6 @@ void Solver::dynamics(double t, double y[], double yp[])
 			auto box = boxes[i];
 
 			M.block<6, 6>(6 * i, 6 * i) = box->getMassMatrix();
-			//f.segment<6>(6 * i) = box->getForce();
 
 			if (i == 0) {
 				Matrix6d I;
@@ -128,36 +122,32 @@ void Solver::dynamics(double t, double y[], double yp[])
 				j = j + 6;
 			}
 		}
-		cout << "J" << J << endl;
-		A = J.transpose() * M * J;
+		
+		MatrixXd JJ = J.block(0, n - num_joints, m, num_joints);
+		A = JJ.transpose() * M * JJ;
 
 		x.setZero();
 		x.segment(6, num_joints) = thetadot;
-		cout << "x" << x << endl;
+		
 		VectorXd phi = J * x;
-
-		cout << "phi" << phi << endl;
-
 		for (int i = 0; i < (int)boxes.size(); i++) {
 			auto box = boxes[i];
-			// Don't forget to update twists as well, we will use it to compute forces
 			box->setTwist(phi.segment<6>(6 * i));
 			box->computeForces();
 			f.segment<6>(6 * i) = box->getForce();
 		}
-		cout << "f" << f << endl;
+	
 		b = J.transpose() * f;
-		x = A.ldlt().solve(b);	// thetaddot
-		cout << "thetaddot" << x << endl;
+
+		// Don't use the first rigid body because it has no constraint so it will affect the result of thetaddot
+		x.segment(6, num_joints) = A.ldlt().solve(b.segment(6, num_joints));	// thetaddot
 
 		for (int i = 0; i < num_joints; i++) {
-			//yp[i] = y[num_joints + i];
 			yp[num_joints + i] = x(6 + i);
 		}
-
 	}
 	else {
-
+		// Maximal coordinate
 
 	}
 	return;
@@ -169,10 +159,12 @@ void Solver::solve(double y[], double yp[], const int neqn) {
 	int flag = -1;
 	double t, t_out, t_start, t_stop;
 	t_start = 0.0;
-	t_stop = 3.0;
-	int n_step = 10;
+	t_stop = 10.0;
+	int n_step = 1000;
 	t = 0.0;
 	t_out = 0.0;
+	VectorXd theta_list;
+	theta_list.resize(n_step);
 
 	// declare pmf as pointer to A member function,
 	// taking no args and returning void
@@ -180,10 +172,10 @@ void Solver::solve(double y[], double yp[], const int neqn) {
 	// set pmf to point to A's member function g
 	pmf = &Solver::dynamics;
 
-	cout << "\n";
+	/*cout << "\n";
 	cout << "FLAG             T          Y         Y'        \n";
-	cout << "\n";
-	
+	cout << "\n";*/
+
 	for (int i_step = 1; i_step <= n_step; i_step++)
 	{
 		t = ((double)(n_step - i_step + 1) * t_start
@@ -195,23 +187,34 @@ void Solver::solve(double y[], double yp[], const int neqn) {
 			/ (double)(n_step);
 
 		while (flag < 0)
-		{
+		{		
 			flag = r8_rkf45(pmf, neqn, y, yp, &t, t_out, &relerr, abserr, flag);
 			
-			cout << setw(4) << flag << "  "
+			/*cout << setw(4) << flag << "  "
 				<< setw(12) << t << "  "
 				<< setw(12) << y[0] << "  "
 				<< setw(12) << yp[0] << "  " << "\n";
-
-			cout << "***" << endl;
+			cout << "***" << endl;*/
 		}
-
+		theta_list(i_step-1) = y[0];
 		flag = -2;
 	}
 
+	// Draw rigid body
+	for (int i_step = 1; i_step <= n_step; i_step++) {
+		for (int i = 0; i < (int)boxes.size(); i++) {
+			auto box = boxes[i];
+			if (i != 0) {
+				// Update joint angles
+				box->reset();
+				
+				box->setJointAngle(theta_list(i_step-1));
+				box->step(1.0);	
+			}	
+		}
+	}
+
 	return;
-
-
 }
 
 void Solver::step(double h) {
@@ -229,7 +232,7 @@ void Solver::step(double h) {
 
 			M.block<6, 6>(6 * i, 6 * i) = box->getMassMatrix();
 			f.segment<6>(6 * i) = box->getMassMatrix() * box->getTwist() + h * box->getForce();
-
+			
 			if (i == 0) {
 				Matrix6d I;
 				I.setIdentity();
@@ -261,11 +264,12 @@ void Solver::step(double h) {
 
 		A = J.transpose() * M * J;
 		b = J.transpose() * f;
+	
 		x = A.ldlt().solve(b);
-
+		
 		// Update Boxes
 		VectorXd phi = J * x;
-
+		
 		for (int i = 0; i < (int)boxes.size(); i++) {
 			auto box = boxes[i];
 			if (i != 0) {
@@ -328,12 +332,6 @@ void Solver::step(double h) {
 Solver::~Solver() {
 
 }
-
-
-
-
-//# include "RKF45.h"
-
 
 //****************************************************************************80
 

@@ -28,10 +28,12 @@ Rigid::Rigid(const shared_ptr<Shape> s, Matrix3d _R, Vector3d _p, Vector3d _dime
 	box(s),
 	dimension(_dimension),
 	grav(0.0, -9.8, 0.0),
-	isReduced(_isReduced)
+	isReduced(_isReduced),
+	isDrawing(false)
 {
 	this->twist.setZero();
 	this->force.setZero();
+
 
 	E_W_0.setZero();
 	E_W_0(3, 3) = 1.0;
@@ -61,8 +63,10 @@ void Rigid::tare()
 void Rigid::reset()
 {
 	twist.setZero();
+	force.setZero();
 	E_W_0 = E_W_0_0;
-	setJointAngle(0.0);
+	joint->reset();
+	//setJointAngle(0.0);
 }
 
 void Rigid::step(double h) {
@@ -75,8 +79,7 @@ void Rigid::step(double h) {
 			Matrix4d E_J_C = joint->getE_C_J().inverse();
 
 			double theta = joint->getTheta();
-			//cout << "theta" << theta << endl;
-
+		
 			Matrix4d R;
 			R.setIdentity();
 			R.block<2, 2>(0, 0) << cos(theta), -sin(theta),

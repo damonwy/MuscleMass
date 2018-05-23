@@ -22,8 +22,6 @@ Scene::~Scene()
 {
 }
 
-
-
 void Scene::load(const string &RESOURCE_DIR)
 {
 	// Units: meters, kilograms, seconds
@@ -70,15 +68,16 @@ void Scene::load(const string &RESOURCE_DIR)
 	E_P_J(1, 3) = -2.0;
 	Matrix4d E_C_J = box1->getE().inverse() * box0->getE() * E_P_J;
 
-	joint1->setE_P_J(E_P_J);
-	joint1->setE_C_J(E_C_J);
+	joint1->setE_P_J_0(E_P_J);
+	joint1->setE_C_J_0(E_C_J);
+	joint1->setTheta_0(0.0);
+	joint1->reset();
 
 	//auto joint2 = box2->getJoint();
 	//E_C_J = box2->getE().inverse() * box1->getE() * E_P_J;
 
 	//joint2->setE_P_J(E_P_J);
 	//joint2->setE_C_J(E_C_J);
-
 
 	// Init solver
 	Integrator time_integrator = RKF45;
@@ -109,15 +108,20 @@ void Scene::reset()
 void Scene::step()
 {
 	t += h;
-	//solver->step(h);
-	double y[2] = {0.0, 0.0};
-	double yp[2];
+	if (solver->time_integrator == RKF45) {
+		double y[2] = { 0.0, 0.0 };
+		double yp[2];
+		solver->solve(y, yp, 2);
 
-	solver->solve(y, yp, 2);
-
-	for (int i = 0; i < (int)boxes.size(); ++i) {
-		//boxes[i]->step(h);
 	}
+	else if (solver->time_integrator == SYMPLECTIC) {
+		solver->step(h);
+
+		for (int i = 0; i < (int)boxes.size(); ++i) {
+			boxes[i]->step(h);
+		}
+	}
+
 }
 
 void Scene::draw(shared_ptr<MatrixStack> MV, const shared_ptr<Program> prog) const

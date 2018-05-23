@@ -30,6 +30,7 @@ public:
 	void tare();
 	void reset();
 	void step(double h);
+	
 	void draw(std::shared_ptr<MatrixStack> MV, const std::shared_ptr<Program> p) const;
 	void computeForces();
 

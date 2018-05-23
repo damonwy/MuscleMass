@@ -38,3 +38,21 @@ void Joint::setE_P_J(Matrix4d _E_P_J) {
 void Joint::setTheta(double _theta) {
 	theta = _theta;
 }
+
+void Joint::setE_C_J_0(Matrix4d _E_C_J_0) {
+	E_C_J_0 = _E_C_J_0;
+}
+
+void Joint::setE_P_J_0(Eigen::Matrix4d _E_P_J_0) {
+	E_P_J_0 = _E_P_J_0;
+}
+
+void Joint::setTheta_0(double _theta_0) {
+	theta_0 = _theta_0;
+}
+
+void Joint::reset() {
+	E_C_J = E_C_J_0;
+	E_P_J = E_P_J_0;
+	theta = theta_0;
+}

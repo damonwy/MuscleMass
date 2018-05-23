@@ -19,6 +19,7 @@ public:
 	void dynamics(double t, double y[], double yp[]);
 	void solve(double y[], double yp[], const int neqn);
 	Integrator time_integrator;
+
 	float r4_abs(float x);
 	float r4_epsilon();
 	void r4_fehl(void f(float t, float y[], float yp[]), int neqn,
@@ -30,7 +31,6 @@ public:
 		float y[], float yp[], float *t, float tout, float *relerr, float abserr,
 		int flag);
 	float r4_sign(float x);
-
 	double r8_abs(double x);
 	double r8_epsilon();
 	void r8_fehl(void (Solver::*f)(double t, double y[], double yp[]), int neqn,
@@ -42,10 +42,7 @@ public:
 		double y[], double yp[], double *t, double tout, double *relerr, double abserr,
 		int flag);
 	double r8_sign(double x);
-
 	void timestamp();
-
-
 
 private:
 	std::vector< std::shared_ptr<Rigid> > boxes;
@@ -57,5 +54,7 @@ private:
 	Eigen::VectorXd f;
 	bool isReduced;
 	const int num_joints;
+	double m;
+	double n;
 };
 
