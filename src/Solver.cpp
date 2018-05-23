@@ -31,6 +31,7 @@ num_joints(_boxes.size() - 1)
 		M.setZero();
 		J.setZero();
 		f.setZero();
+		
 	}
 	else {
 		n = 6 * (int)boxes.size() + 6 + 5 * ((int)boxes.size()-1);
@@ -151,7 +152,35 @@ void Solver::dynamics(double t, double y[], double yp[])
 	return;
 }
 
-VectorXd Solver::solve(double y[], double yp[], const int neqn, double _t_start, double _t_stop, int n_step) {
+vector<double> Solver::solve(double y[], double yp[], const int neqn, double _t_start, double _t_stop) {
+	double abserr = sqrt(r8_epsilon());
+	double relerr = sqrt(r8_epsilon());
+	int flag = -1;
+	double t_start, t_stop;
+	t_start = _t_start;
+	t_stop = _t_stop;
+
+	// declare pmf as pointer to A member function,
+	// taking no args and returning void
+	void (Solver::*pmf)(double t, double y[], double yp[]);
+	// set pmf to point to A's member function g
+	pmf = &Solver::dynamics;
+
+	while (flag < 0)
+	{
+		flag = r8_rkf45(pmf, neqn, y, yp, &t_start, t_stop, &relerr, abserr, flag);
+	}
+	
+	flag = -2;
+
+	vector<double> tmp;
+	for (int i = 0; i < neqn; i++) {
+		tmp.push_back(y[i]);
+	}
+	return tmp;
+}
+
+VectorXd Solver::solve_once(double y[], double yp[], const int neqn, double _t_start, double _t_stop, int n_step) {
 	double abserr = sqrt(r8_epsilon());
 	double relerr = sqrt(r8_epsilon());
 	int flag = -1;
@@ -181,12 +210,12 @@ VectorXd Solver::solve(double y[], double yp[], const int neqn, double _t_start,
 			/ (double)(n_step);
 
 		while (flag < 0)
-		{		
+		{
 			flag = r8_rkf45(pmf, neqn, y, yp, &t, t_out, &relerr, abserr, flag);
-			
+
 		}
-		theta_list(i_step-1) = y[0];
-		
+		theta_list(i_step - 1) = y[0];
+
 		flag = -2;
 	}
 	return theta_list;
@@ -240,8 +269,12 @@ void Solver::step(double h) {
 		A = J.transpose() * M * J;
 		b = J.transpose() * f;
 	
-		x = A.ldlt().solve(b);
-		
+		//x = A.ldlt().solve(b);
+		x.setZero();
+		MatrixXd JJ = J.block(0, n - num_joints, m, num_joints);
+		A = JJ.transpose() * M * JJ;
+		x.segment(6, num_joints) = A.ldlt().solve(b.segment(6, num_joints));	// thetadot
+
 		// Update Boxes
 		VectorXd phi = J * x;
 		

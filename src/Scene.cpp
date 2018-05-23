@@ -18,7 +18,7 @@ Scene::Scene() :
 	grav(0.0, 0.0, 0.0),
 	t_start(0.0),
 	t_stop(100.0),
-	n_step(500)
+	n_step(10)
 {
 	theta_list.resize(n_step);
 }
@@ -30,17 +30,17 @@ Scene::~Scene()
 void Scene::load(const string &RESOURCE_DIR)
 {
 	// Units: meters, kilograms, seconds
-	h = 1e-2;	
+	h = 1e-2;
 	grav << 0.0, -9.8, 0.0;
 	bool isReduced = true;
 	double scale = 1.0;
-	double mass = 8.0; 
+	double mass = 8.0;
 
 	// Init boxes
 	boxShape = make_shared<Shape>();
 	boxShape->loadMesh(RESOURCE_DIR + "box2.obj");
 
-	Matrix3d R; 
+	Matrix3d R;
 	//R.setIdentity();
 	R << 0, -1, 0,
 		1, 0, 0,
@@ -77,7 +77,12 @@ void Scene::load(const string &RESOURCE_DIR)
 	joint1->setE_C_J_0(E_C_J);
 	joint1->setTheta_0(0.0);
 	joint1->reset();
-
+	y.push_back(0.0);
+	y.push_back(0.0);
+	y.resize(2 * (boxes.size() - 1));
+	yp.push_back(0.0);
+	yp.push_back(0.0);
+	yp.resize(2 * (boxes.size() - 1));
 	//auto joint2 = box2->getJoint();
 	//E_C_J = box2->getE().inverse() * box1->getE() * E_P_J;
 
@@ -111,29 +116,48 @@ void Scene::reset()
 }
 
 void Scene::step()
-{	
+{
 	if (solver->time_integrator == RKF45) {
-		if (step_i == 0) {
-			double y[2] = { 0.0, 0.0 };
-			double yp[2];
-			theta_list = solver->solve(y, yp, 2, t_start, t_stop, n_step);
-			for (int i = 0; i < (int)boxes.size(); i++) {
-				auto box = boxes[i];
-				if (i != 0) {
-					// Update joint angles
-					box->setJointAngle(theta_list(step_i), true);
-				}
-			}
+		
+		vector<double> tmp = solver->solve(&y[0], &yp[0], (int)2 * (boxes.size() - 1), t, t + h);
+
+		y.clear();
+		// update y
+		for (int i = 0; i < (int)2 * (boxes.size() - 1); i++){
+			y.push_back(tmp[i]);		
 		}
-		else {
-			for (int i = 0; i < (int)boxes.size(); i++) {
-				auto box = boxes[i];
-				if (i != 0) {
+
+		for (int i = 0; i < (int)boxes.size(); i++) {
+			auto box = boxes[i];
+			if (i != 0) {
 				// Update joint angles
-				box->setJointAngle(theta_list(step_i), true);	
-				}
+				box->setJointAngle(y[i-1], true);	
 			}
 		}
+
+		// solve_once
+
+		//if (step_i == 0) {
+		//	double y[2] = { 0.0, 0.0 };
+		//	double yp[2];
+		//	theta_list = solver->solve_once(y, yp, 2, t_start, t_stop, n_step);
+		//	for (int i = 0; i < (int)boxes.size(); i++) {
+		//		auto box = boxes[i];
+		//		if (i != 0) {
+		//			// Update joint angles
+		//			box->setJointAngle(theta_list(step_i), true);
+		//		}
+		//	}
+		//}
+		//else {
+		//	for (int i = 0; i < (int)boxes.size(); i++) {
+		//		auto box = boxes[i];
+		//		if (i != 0) {
+		//		// Update joint angles
+		//		box->setJointAngle(theta_list(step_i), true);	
+		//		}
+		//	}
+		//}
 	}
 	else if (solver->time_integrator == SYMPLECTIC) {
 		solver->step(h);

@@ -44,7 +44,10 @@ private:
 	Eigen::VectorXd theta_list;
 	double t_start;
 	double t_stop;
-	
+
+	std::vector<double> y;
+	std::vector<double> yp;
+
 	std::shared_ptr<Shape> boxShape;
 	std::vector< std::shared_ptr<Rigid> > boxes;
 	std::shared_ptr<Solver> solver;

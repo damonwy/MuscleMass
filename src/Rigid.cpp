@@ -74,7 +74,7 @@ void Rigid::reset()
 
 void Rigid::step(double h) {
 	computeForces();
-	isReduced = true;
+	
 	// Position Update
 	if (isReduced) {
 		// Use reduced positions
@@ -82,7 +82,7 @@ void Rigid::step(double h) {
 			Matrix4d E_J_C = joint->getE_C_J().inverse();
 
 			double theta = joint->getTheta();
-		
+			
 			Matrix4d R;
 			R.setIdentity();
 			R.block<2, 2>(0, 0) << cos(theta), -sin(theta),
@@ -98,8 +98,7 @@ void Rigid::step(double h) {
 		// Use maximal coordinate
 		if (i != 0) {
 			E_W_0 = integrate(E_W_0, twist, h);
-		}
-		
+		}	
 	}
 
 	// Joint Update

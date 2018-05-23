@@ -17,7 +17,8 @@ public:
 	virtual ~Solver();
 	void step(double h);
 	void dynamics(double t, double y[], double yp[]);
-	Eigen::VectorXd solve(double y[], double yp[], const int neqn, double t_s, double t_end, int n_step);
+	std::vector<double> solve(double y[], double yp[], const int neqn, double t_s, double t_end);
+	Eigen::VectorXd solve_once(double y[], double yp[], const int neqn, double t_s, double t_end, int n_step);
 	Integrator time_integrator;
 
 	float r4_abs(float x);

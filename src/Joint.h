@@ -14,8 +14,6 @@ private:
 	Eigen::Matrix4d E_P_J_0;
 	Eigen::Matrix4d E_C_J_0;
 	double theta_0;
-	//int type;		// the type of joint
-	//int hinge_type;
 	
 public:
 	Eigen::Matrix4d getE_P_J() const;
