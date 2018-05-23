@@ -28,8 +28,7 @@ Rigid::Rigid(const shared_ptr<Shape> s, Matrix3d _R, Vector3d _p, Vector3d _dime
 	box(s),
 	dimension(_dimension),
 	grav(0.0, -9.8, 0.0),
-	isReduced(_isReduced),
-	isDrawing(false)
+	isReduced(_isReduced)
 {
 	this->twist.setZero();
 	this->force.setZero();
@@ -37,8 +36,12 @@ Rigid::Rigid(const shared_ptr<Shape> s, Matrix3d _R, Vector3d _p, Vector3d _dime
 
 	E_W_0.setZero();
 	E_W_0(3, 3) = 1.0;
+	
 	setP(_p);
 	setR(_R);
+
+	E_W_0_0 = E_W_0;
+	E_W_0_temp = E_W_0;
 
 	mass_mat.setZero();
 	double d0 = dimension(0);
@@ -247,6 +250,20 @@ void Rigid::computeForces() {
 	force = coriolis_forces + body_forces;
 }
 
+void Rigid::computeTempForces() {
+	Matrix6d twist_bracket;
+	twist_bracket.setZero();
+	twist_bracket.block<3, 3>(0, 0) = bracket3(twist.segment<3>(0));
+	twist_bracket.block<3, 3>(3, 3) = bracket3(twist.segment<3>(0));
+
+	Vector6d coriolis_forces = twist_bracket.transpose() * mass_mat * twist;
+	Vector6d body_forces;
+	body_forces.setZero();
+	Matrix3d R = E_W_0_temp.block<3, 3>(0, 0);
+	body_forces.segment<3>(3) = m * R.transpose() * grav;
+	force = coriolis_forces + body_forces;
+}
+
 // get
 Eigen::Vector3d Rigid::getP() const {
 	return E_W_0.block<3, 1>(0, 3);
@@ -274,6 +291,10 @@ shared_ptr<Joint> Rigid::getJoint() const {
 
 Matrix4d Rigid::getE() const {
 	return E_W_0;
+}
+
+Matrix4d Rigid::getEtemp() const {
+	return E_W_0_temp;
 }
 
 shared_ptr<Rigid> Rigid::getParent() const {
@@ -309,7 +330,40 @@ void Rigid::setParent(shared_ptr<Rigid> _parent) {
 	parent = _parent;
 }
 
-void Rigid::setJointAngle(double _theta) {
+void Rigid::setJointAngle(double _theta, bool isDrawing) {
+	joint->reset();
+	joint->setTheta(_theta);
+	if (isReduced) {
+		// Use reduced positions
+		if (i != 0) {
+			Matrix4d E_J_C = joint->getE_C_J().inverse();
+
+			double theta = joint->getTheta();
+
+			Matrix4d R;
+			R.setIdentity();
+			R.block<2, 2>(0, 0) << cos(theta), -sin(theta),
+				sin(theta), cos(theta);
+
+			Matrix4d E_P_J = joint->getE_P_J();
+			Matrix4d E_W_P = parent->getEtemp();
+			Matrix4d E_W_C = E_W_P * E_P_J * R * E_J_C;
+			E_W_0_temp = E_W_C;
+			if (isDrawing) {
+				E_W_0 = E_W_0_temp;
+			}
+		}
+	}
+
+	// Joint Update
+	if (i != 0) {
+		Matrix4d E_C_J = getEtemp().inverse() * parent->getEtemp() * joint->getE_P_J();
+		joint->setE_C_J(E_C_J);
+	}
+
+}
+
+void Rigid::setRotationAngle(double _theta) {
 	joint->setTheta(_theta);
 }
 

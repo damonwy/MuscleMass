@@ -14,8 +14,13 @@ using namespace Eigen;
 Scene::Scene() :
 	t(0.0),
 	h(1e-2),
-	grav(0.0, 0.0, 0.0)
+	step_i(0),
+	grav(0.0, 0.0, 0.0),
+	t_start(0.0),
+	t_stop(100.0),
+	n_step(500)
 {
+	theta_list.resize(n_step);
 }
 
 Scene::~Scene()
@@ -25,7 +30,7 @@ Scene::~Scene()
 void Scene::load(const string &RESOURCE_DIR)
 {
 	// Units: meters, kilograms, seconds
-	h = 1e-3;	
+	h = 1e-2;	
 	grav << 0.0, -9.8, 0.0;
 	bool isReduced = true;
 	double scale = 1.0;
@@ -106,22 +111,38 @@ void Scene::reset()
 }
 
 void Scene::step()
-{
-	t += h;
+{	
 	if (solver->time_integrator == RKF45) {
-		double y[2] = { 0.0, 0.0 };
-		double yp[2];
-		solver->solve(y, yp, 2);
-
+		if (step_i == 0) {
+			double y[2] = { 0.0, 0.0 };
+			double yp[2];
+			theta_list = solver->solve(y, yp, 2, t_start, t_stop, n_step);
+			for (int i = 0; i < (int)boxes.size(); i++) {
+				auto box = boxes[i];
+				if (i != 0) {
+					// Update joint angles
+					box->setJointAngle(theta_list(step_i), true);
+				}
+			}
+		}
+		else {
+			for (int i = 0; i < (int)boxes.size(); i++) {
+				auto box = boxes[i];
+				if (i != 0) {
+				// Update joint angles
+				box->setJointAngle(theta_list(step_i), true);	
+				}
+			}
+		}
 	}
 	else if (solver->time_integrator == SYMPLECTIC) {
 		solver->step(h);
-
 		for (int i = 0; i < (int)boxes.size(); ++i) {
 			boxes[i]->step(h);
 		}
 	}
-
+	t += h;
+	step_i += 1;
 }
 
 void Scene::draw(shared_ptr<MatrixStack> MV, const shared_ptr<Program> prog) const

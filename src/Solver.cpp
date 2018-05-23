@@ -74,9 +74,7 @@ void Solver::dynamics(double t, double y[], double yp[])
 	for (int i = 0; i < (int)boxes.size(); i++) {
 		auto box = boxes[i];
 		if (i != 0) {
-			box->reset();
-			box->setJointAngle(theta(i - 1));	
-			box->step(1.0);
+			box->setJointAngle(theta(i - 1), false);	
 		}
 	}
 
@@ -122,7 +120,7 @@ void Solver::dynamics(double t, double y[], double yp[])
 				j = j + 6;
 			}
 		}
-		
+
 		MatrixXd JJ = J.block(0, n - num_joints, m, num_joints);
 		A = JJ.transpose() * M * JJ;
 
@@ -133,7 +131,7 @@ void Solver::dynamics(double t, double y[], double yp[])
 		for (int i = 0; i < (int)boxes.size(); i++) {
 			auto box = boxes[i];
 			box->setTwist(phi.segment<6>(6 * i));
-			box->computeForces();
+			box->computeTempForces();
 			f.segment<6>(6 * i) = box->getForce();
 		}
 	
@@ -141,28 +139,28 @@ void Solver::dynamics(double t, double y[], double yp[])
 
 		// Don't use the first rigid body because it has no constraint so it will affect the result of thetaddot
 		x.segment(6, num_joints) = A.ldlt().solve(b.segment(6, num_joints));	// thetaddot
-
 		for (int i = 0; i < num_joints; i++) {
-			yp[num_joints + i] = x(6 + i);
+			yp[num_joints + i] = x(6 + i);		
 		}
 	}
 	else {
 		// Maximal coordinate
+		// TODO or never
 
 	}
 	return;
 }
 
-void Solver::solve(double y[], double yp[], const int neqn) {
+VectorXd Solver::solve(double y[], double yp[], const int neqn, double _t_start, double _t_stop, int n_step) {
 	double abserr = sqrt(r8_epsilon());
 	double relerr = sqrt(r8_epsilon());
 	int flag = -1;
 	double t, t_out, t_start, t_stop;
-	t_start = 0.0;
-	t_stop = 10.0;
-	int n_step = 1000;
+	t_start = _t_start;
+	t_stop = _t_stop;
 	t = 0.0;
 	t_out = 0.0;
+
 	VectorXd theta_list;
 	theta_list.resize(n_step);
 
@@ -171,10 +169,6 @@ void Solver::solve(double y[], double yp[], const int neqn) {
 	void (Solver::*pmf)(double t, double y[], double yp[]);
 	// set pmf to point to A's member function g
 	pmf = &Solver::dynamics;
-
-	/*cout << "\n";
-	cout << "FLAG             T          Y         Y'        \n";
-	cout << "\n";*/
 
 	for (int i_step = 1; i_step <= n_step; i_step++)
 	{
@@ -190,31 +184,12 @@ void Solver::solve(double y[], double yp[], const int neqn) {
 		{		
 			flag = r8_rkf45(pmf, neqn, y, yp, &t, t_out, &relerr, abserr, flag);
 			
-			/*cout << setw(4) << flag << "  "
-				<< setw(12) << t << "  "
-				<< setw(12) << y[0] << "  "
-				<< setw(12) << yp[0] << "  " << "\n";
-			cout << "***" << endl;*/
 		}
 		theta_list(i_step-1) = y[0];
+		
 		flag = -2;
 	}
-
-	// Draw rigid body
-	for (int i_step = 1; i_step <= n_step; i_step++) {
-		for (int i = 0; i < (int)boxes.size(); i++) {
-			auto box = boxes[i];
-			if (i != 0) {
-				// Update joint angles
-				box->reset();
-				
-				box->setJointAngle(theta_list(i_step-1));
-				box->step(1.0);	
-			}	
-		}
-	}
-
-	return;
+	return theta_list;
 }
 
 void Solver::step(double h) {
@@ -274,7 +249,7 @@ void Solver::step(double h) {
 			auto box = boxes[i];
 			if (i != 0) {
 				// Update joint angles
-				box->setJointAngle(h * x(5 + i)); 	
+				box->setRotationAngle(h * x(5 + i)); 	
 				// Don't forget to update twists as well, we will use it to compute forces
 				box->setTwist(phi.segment<6>(6 * i));
 			}

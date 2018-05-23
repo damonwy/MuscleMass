@@ -33,6 +33,7 @@ public:
 	
 	void draw(std::shared_ptr<MatrixStack> MV, const std::shared_ptr<Program> p) const;
 	void computeForces();
+	void computeTempForces();
 
 	// set
 	void setIndex(int _i);
@@ -42,7 +43,8 @@ public:
 	void setForce(Vector6d _force);
 	void setParent(std::shared_ptr<Rigid> _parent);
 	void addChild(std::shared_ptr<Rigid> _child);
-	void setJointAngle(double _theta);
+	void setJointAngle(double _theta, bool isDrawing);
+	void setRotationAngle(double _theta);
 
 	// get
 	Eigen::Vector3d getP() const;
@@ -52,6 +54,7 @@ public:
 	Vector6d getForce() const;
 	std::shared_ptr<Joint> getJoint() const;
 	Eigen::Matrix4d getE() const;
+	Eigen::Matrix4d getEtemp() const;
 	std::shared_ptr<Rigid> getParent() const;
 	int getIndex() const;
 
@@ -78,6 +81,8 @@ private:
 	std::shared_ptr<Joint> joint;
 	Eigen::Matrix4d E_W_0; // Where current transform is wrt world
 	Eigen::Matrix4d E_W_0_0; // Where current transform is wrt world at the start
+	Eigen::Matrix4d E_W_0_temp; // for computational purpose, not for drawing
+
 	Matrix6d mass_mat;
 	Vector6d twist;
 	Vector6d force;

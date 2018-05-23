@@ -38,7 +38,12 @@ public:
 private:
 	double t;
 	double h;
+	int step_i;
 	Eigen::Vector3d grav;
+	int n_step;
+	Eigen::VectorXd theta_list;
+	double t_start;
+	double t_stop;
 	
 	std::shared_ptr<Shape> boxShape;
 	std::vector< std::shared_ptr<Rigid> > boxes;
