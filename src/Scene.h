@@ -32,7 +32,8 @@ public:
 	void step();
 	
 	void draw(std::shared_ptr<MatrixStack> MV, const std::shared_ptr<Program> prog) const;
-	
+	void computeEnergy();
+	void saveData(int num_steps);
 	double getTime() const { return t; }
 	
 private:
@@ -44,6 +45,12 @@ private:
 	Eigen::VectorXd theta_list;
 	double t_start;
 	double t_stop;
+
+	double V; // potential energy
+	double K; // kinetic energy
+	std::vector < double > Kvec;
+	std::vector < double > Vvec;
+	std::vector < double > Tvec;
 
 	std::vector<double> y;
 	std::vector<double> yp;

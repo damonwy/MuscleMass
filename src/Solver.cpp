@@ -81,46 +81,8 @@ void Solver::dynamics(double t, double y[], double yp[])
 
 	// Solve linear system
 	if (isReduced) {
-		int j = 6;
 
-		// Rotate about Z axis
-		Vector6d z;
-		z.setZero();
-		z(2) = 1.0;
-
-		for (int i = 0; i < (int)boxes.size(); i++) {
-			auto box = boxes[i];
-
-			M.block<6, 6>(6 * i, 6 * i) = box->getMassMatrix();
-
-			if (i == 0) {
-				Matrix6d I;
-				I.setIdentity();
-				J.block<6, 6>(0, 0) = I;
-			}
-			else if (i == 1) {
-				auto joint = box->getJoint();
-				Matrix6d Ad_C_J = Rigid::adjoint(joint->getE_C_J());
-				Matrix6d Ad_J_P = Rigid::adjoint(joint->getE_P_J().inverse());
-				Matrix6d Ad_C_P = Ad_C_J * Ad_J_P;
-				Vector6d Adz_C_J = Ad_C_J * z;
-
-				J.block<6, 6>(j, 0) = Ad_C_P;
-				J.block<6, 1>(j, 5 + i) = Adz_C_J;
-				j = j + 6;
-			}
-			else {
-				auto joint = box->getJoint();
-				Matrix6d Ad_C_J = Rigid::adjoint(joint->getE_C_J());
-				Matrix6d Ad_J_P = Rigid::adjoint(joint->getE_P_J().inverse());
-				Vector6d Adz_C_J = Ad_C_J * z;
-				Matrix6d Ad_C_P = Ad_C_J * Ad_J_P;
-
-				J.block(j, 0, 6, 4 + i) = Ad_C_P * J.block(j - 6, 0, 6, 4 + i);
-				J.block<6, 1>(j, 5 + i) = Adz_C_J;
-				j = j + 6;
-			}
-		}
+		J = getJ_twist_thetadot();
 
 		MatrixXd JJ = J.block(0, n - num_joints, m, num_joints);
 		A = JJ.transpose() * M * JJ;
@@ -140,6 +102,7 @@ void Solver::dynamics(double t, double y[], double yp[])
 
 		// Don't use the first rigid body because it has no constraint so it will affect the result of thetaddot
 		x.segment(6, num_joints) = A.ldlt().solve(b.segment(6, num_joints));	// thetaddot
+
 		for (int i = 0; i < num_joints; i++) {
 			yp[num_joints + i] = x(6 + i);		
 		}
@@ -150,6 +113,51 @@ void Solver::dynamics(double t, double y[], double yp[])
 
 	}
 	return;
+}
+
+MatrixXd Solver::getJ_twist_thetadot() {
+	J.setZero();
+	int j = 6;
+
+	// Rotate about Z axis
+	Vector6d z;
+	z.setZero();
+	z(2) = 1.0;
+
+	for (int i = 0; i < (int)boxes.size(); i++) {
+		auto box = boxes[i];
+
+		M.block<6, 6>(6 * i, 6 * i) = box->getMassMatrix();
+
+		if (i == 0) {
+			Matrix6d I;
+			I.setIdentity();
+			J.block<6, 6>(0, 0) = I;
+		}
+		else if (i == 1) {
+			auto joint = box->getJoint();
+			Matrix6d Ad_C_J = Rigid::adjoint(joint->getE_C_J());
+			Matrix6d Ad_J_P = Rigid::adjoint(joint->getE_P_J().inverse());
+			Matrix6d Ad_C_P = Ad_C_J * Ad_J_P;
+			Vector6d Adz_C_J = Ad_C_J * z;
+
+			J.block<6, 6>(j, 0) = Ad_C_P;
+			J.block<6, 1>(j, 5 + i) = Adz_C_J;
+			j = j + 6;
+		}
+		else {
+			auto joint = box->getJoint();
+			Matrix6d Ad_C_J = Rigid::adjoint(joint->getE_C_J());
+			Matrix6d Ad_J_P = Rigid::adjoint(joint->getE_P_J().inverse());
+			Vector6d Adz_C_J = Ad_C_J * z;
+			Matrix6d Ad_C_P = Ad_C_J * Ad_J_P;
+
+			J.block(j, 0, 6, 5 + i) = Ad_C_P * J.block(j - 6, 0, 6, 5 + i);
+			J.block<6, 1>(j, 5 + i) = Adz_C_J;
+			j = j + 6;
+		}
+	}
+	return J;
 }
 
 vector<double> Solver::solve(double y[], double yp[], const int neqn, double _t_start, double _t_stop) {
@@ -224,67 +232,33 @@ VectorXd Solver::solve_once(double y[], double yp[], const int neqn, double _t_s
 void Solver::step(double h) {
 	// Solve linear system
 	if (isReduced) {
-		int j = 6;
-
-		// Rotate about Z axis
-		Vector6d z;
-		z.setZero();
-		z(2) = 1.0;
+		J = getJ_twist_thetadot();
 
 		for (int i = 0; i < (int)boxes.size(); i++) {
 			auto box = boxes[i];
-
-			M.block<6, 6>(6 * i, 6 * i) = box->getMassMatrix();
 			f.segment<6>(6 * i) = box->getMassMatrix() * box->getTwist() + h * box->getForce();
-			
-			if (i == 0) {
-				Matrix6d I;
-				I.setIdentity();
-				J.block<6, 6>(0, 0) = I;
-			}
-			else if (i == 1) {
-				auto joint = box->getJoint();
-				Matrix6d Ad_C_J = Rigid::adjoint(joint->getE_C_J());
-				Matrix6d Ad_J_P = Rigid::adjoint(joint->getE_P_J().inverse());
-				Matrix6d Ad_C_P = Ad_C_J * Ad_J_P; 
-				Vector6d Adz_C_J = Ad_C_J * z;
-
-				J.block<6, 6>(j, 0) = Ad_C_P;
-				J.block<6, 1>(j, 5+i) = Adz_C_J;
-				j = j + 6;
-			}
-			else{
-				auto joint = box->getJoint();
-				Matrix6d Ad_C_J = Rigid::adjoint(joint->getE_C_J());
-				Matrix6d Ad_J_P = Rigid::adjoint(joint->getE_P_J().inverse());
-				Vector6d Adz_C_J = Ad_C_J * z;
-				Matrix6d Ad_C_P = Ad_C_J * Ad_J_P;
-
-				J.block(j, 0, 6, 4+i) = Ad_C_P * J.block(j - 6, 0, 6, 4 + i);
-				J.block<6, 1>(j, 5 + i) = Adz_C_J;
-				j = j + 6;
-			}
 		}
 
 		A = J.transpose() * M * J;
 		b = J.transpose() * f;
-	
+
 		//x = A.ldlt().solve(b);
 		x.setZero();
 		MatrixXd JJ = J.block(0, n - num_joints, m, num_joints);
 		A = JJ.transpose() * M * JJ;
-		x.segment(6, num_joints) = A.ldlt().solve(b.segment(6, num_joints));	// thetadot
-
-		// Update Boxes
-		VectorXd phi = J * x;
 		
+		x.segment(6, num_joints) = A.ldlt().solve(b.segment(6, num_joints));	// thetadot
+		// Update Boxes
+
+		VectorXd phi = JJ * x.segment(6, num_joints);
+
 		for (int i = 0; i < (int)boxes.size(); i++) {
 			auto box = boxes[i];
 			if (i != 0) {
 				// Update joint angles
 				box->setRotationAngle(h * x(5 + i)); 	
 				// Don't forget to update twists as well, we will use it to compute forces
-				box->setTwist(phi.segment<6>(6 * i));
+				box->setTwist(phi.segment<6>(6 * i));	
 			}
 		}
 	}
@@ -328,7 +302,7 @@ void Solver::step(double h) {
 		}
 
 		x = A.ldlt().solve(b);
-
+		
 		// Update boxes
 		for (int i = 0; i < (int)boxes.size(); i++) {
 			auto box = boxes[i];

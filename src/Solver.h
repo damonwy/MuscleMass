@@ -17,6 +17,7 @@ public:
 	virtual ~Solver();
 	void step(double h);
 	void dynamics(double t, double y[], double yp[]);
+	Eigen::MatrixXd getJ_twist_thetadot();
 	std::vector<double> solve(double y[], double yp[], const int neqn, double t_s, double t_end);
 	Eigen::VectorXd solve_once(double y[], double yp[], const int neqn, double t_s, double t_end, int n_step);
 	Integrator time_integrator;
@@ -44,7 +45,9 @@ public:
 		int flag);
 	double r8_sign(double x);
 	void timestamp();
-
+	double m;
+	double n;
+	const int num_joints;
 private:
 	std::vector< std::shared_ptr<Rigid> > boxes;
 	Eigen::MatrixXd A;
@@ -54,8 +57,7 @@ private:
 	Eigen::VectorXd b;
 	Eigen::VectorXd f;
 	bool isReduced;
-	const int num_joints;
-	double m;
-	double n;
+	
+	
 };
 
