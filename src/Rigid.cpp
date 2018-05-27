@@ -60,15 +60,15 @@ Rigid::Rigid(const shared_ptr<Shape> s, Matrix3d _R, Vector3d _p, Vector3d _dime
 
 void Rigid::tare()
 {
-	twist.setZero();
+	this->twist.setZero();
 }
 
 void Rigid::reset()
 {
-	twist.setZero();
-	force.setZero();
-	E_W_0 = E_W_0_0;
-	joint->reset();
+	this->twist.setZero();
+	this->force.setZero();
+	this->E_W_0 = E_W_0_0;
+	this->joint->reset();
 	//setJointAngle(0.0);
 }
 
@@ -91,20 +91,20 @@ void Rigid::step(double h) {
 			Matrix4d E_P_J = joint->getE_P_J();
 			Matrix4d E_W_P = parent->getE();
 			Matrix4d E_W_C = E_W_P * E_P_J * R * E_J_C;
-			E_W_0 = E_W_C;
+			this->E_W_0 = E_W_C;
 		}
 	}
 	else {
 		// Use maximal coordinate
 		if (i != 0) {
-			E_W_0 = integrate(E_W_0, twist, h);
+			this->E_W_0 = integrate(E_W_0, twist, h);
 		}	
 	}
 
 	// Joint Update
 	if (i != 0) {
 		Matrix4d E_C_J = getE().inverse() * parent->getE() * joint->getE_P_J();
-		joint->setE_C_J(E_C_J);
+		this->joint->setE_C_J(E_C_J);
 	}
 	
 }
@@ -246,7 +246,7 @@ void Rigid::computeForces() {
 	Vector6d body_forces;
 	body_forces.setZero();
 	body_forces.segment<3>(3) = m * getR().transpose() * grav;
-	force = coriolis_forces + body_forces;
+	this->force = coriolis_forces + body_forces;
 }
 
 void Rigid::computeTempForces() {
@@ -260,78 +260,78 @@ void Rigid::computeTempForces() {
 	body_forces.setZero();
 	Matrix3d R = E_W_0_temp.block<3, 3>(0, 0);
 	body_forces.segment<3>(3) = m * R.transpose() * grav;
-	force = coriolis_forces + body_forces;
+	this->force = coriolis_forces + body_forces;
 }
 
 // get
 Eigen::Vector3d Rigid::getP() const {
-	return E_W_0.block<3, 1>(0, 3);
+	return this->E_W_0.block<3, 1>(0, 3);
 }
 
 Eigen::Matrix3d Rigid::getR() const {
-	return E_W_0.block<3, 3>(0, 0);
+	return this->E_W_0.block<3, 3>(0, 0);
 }
 
 Matrix6d Rigid::getMassMatrix() const {
-	return mass_mat;
+	return this->mass_mat;
 }
 
 Vector6d Rigid::getTwist() const {
-	return twist;
+	return this->twist;
 }
 
 Vector6d Rigid::getForce() const {
-	return force;
+	return this->force;
 }
 
 shared_ptr<Joint> Rigid::getJoint() const {
-	return joint;
+	return this->joint;
 }
 
 Matrix4d Rigid::getE() const {
-	return E_W_0;
+	return this->E_W_0;
 }
 
 Matrix4d Rigid::getEtemp() const {
-	return E_W_0_temp;
+	return this->E_W_0_temp;
 }
 
 shared_ptr<Rigid> Rigid::getParent() const {
-	return parent;
+	return this->parent;
 }
 
 int Rigid::getIndex() const {
-	return i;
+	return this->i;
 }
 
 // set
 void Rigid::setP(Eigen::Vector3d p) {
-	E_W_0.block<3, 1>(0, 3) = p;
+	this->E_W_0.block<3, 1>(0, 3) = p;
 }
 
 void Rigid::setR(Eigen::Matrix3d R) {
-	E_W_0.block<3, 3>(0, 0) = R;
+	this->E_W_0.block<3, 3>(0, 0) = R;
 }
 
 void Rigid::setTwist(Vector6d _twist) {
-	twist = _twist;
+	this->twist = _twist;
 }
 
 void Rigid::setForce(Vector6d _force) {
-	force = _force;
+	this->force = _force;
 }
 
 void Rigid::setIndex(int _i) {
-	i = _i;
+	this->i = _i;
 }
 
 void Rigid::setParent(shared_ptr<Rigid> _parent) {
-	parent = _parent;
+	this->parent = _parent;
 }
 
 void Rigid::setJointAngle(double _theta, bool isDrawing) {
-	joint->reset();
-	joint->setTheta(_theta);
+	this->joint->reset();
+	this->joint->setTheta(_theta);
 	if (isReduced) {
 		// Use reduced positions
 		if (i != 0) {
@@ -347,9 +347,9 @@ void Rigid::setJointAngle(double _theta, bool isDrawing) {
 			Matrix4d E_P_J = joint->getE_P_J();
 			Matrix4d E_W_P = parent->getEtemp();
 			Matrix4d E_W_C = E_W_P * E_P_J * R * E_J_C;
-			E_W_0_temp = E_W_C;
+			this->E_W_0_temp = E_W_C;
 			if (isDrawing) {
-				E_W_0 = E_W_0_temp;
+				this->E_W_0 = E_W_0_temp;
 			}
 		}
 	}
@@ -357,17 +357,17 @@ void Rigid::setJointAngle(double _theta, bool isDrawing) {
 	// Joint Update
 	if (i != 0) {
 		Matrix4d E_C_J = getEtemp().inverse() * parent->getEtemp() * joint->getE_P_J();
-		joint->setE_C_J(E_C_J);
+		this->joint->setE_C_J(E_C_J);
 	}
 
 }
 
 void Rigid::setRotationAngle(double _theta) {
-	joint->setTheta(_theta);
+	this->joint->setTheta(_theta);
 }
 
 void Rigid::addChild(shared_ptr<Rigid> _child) {
-	children.push_back(_child);
+	this->children.push_back(_child);
 }
 
 Rigid::~Rigid()
