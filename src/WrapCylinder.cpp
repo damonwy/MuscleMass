@@ -150,9 +150,9 @@ void WrapCylinder::draw(shared_ptr<MatrixStack> MV, const shared_ptr<Program> pr
 		double theta_x = atan2(R(2, 1), R(2, 2));
 		double theta_y = atan2(-R(2, 0), sqrt(pow(R(2, 1), 2) + pow(R(2, 2), 2)));
 		double theta_z = atan2(R(1, 0), R(0, 0));
-		MV->rotate(theta_x, 1.0f, 0.0f, 0.0f);
-		MV->rotate(theta_y, 0.0f, 1.0f, 0.0f);
 		MV->rotate(theta_z, 0.0f, 0.0f, 1.0f);
+		MV->rotate(theta_y, 0.0f, 1.0f, 0.0f);
+		MV->rotate(theta_x, 1.0f, 0.0f, 0.0f);
 		MV->scale(r);
 		glUniformMatrix4fv(prog->getUniform("MV"), 1, GL_FALSE, glm::value_ptr(MV->topMatrix()));
 		cylinder_shape->draw(prog);
@@ -168,4 +168,25 @@ Vector3d WrapCylinder::getP() const {
 
 Matrix3d WrapCylinder::getR() const {
 	return this->E_W_0.block<3, 3>(0, 0);
+}
+
+// set
+void WrapCylinder::setP(Vector3d p) {
+	this->E_W_0.block<3, 1>(0, 3) = p;
+}
+
+void WrapCylinder::setR(Matrix3d R) {
+	this->E_W_0.block<3, 3>(0, 0) = R;
+}
+
+void WrapCylinder::setE(Matrix4d E) {
+	this->E_W_0 = E;
+}
+
+Matrix4d WrapCylinder::getE() const {
+	return this->E_W_0;
+}
+
+Matrix4d WrapCylinder::getE_P_0() const {
+	return this->E_P_0;
 }

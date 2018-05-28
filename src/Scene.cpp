@@ -5,6 +5,7 @@
 #include "Shape.h"
 #include "Program.h"
 #include "Rigid.h"
+#include "WrapCylinder.h"
 #include "Solver.h"
 #include "Joint.h"
 #include "MatlabDebug.h"
@@ -41,74 +42,105 @@ void Scene::load(const string &RESOURCE_DIR)
 	Integrator time_integrator = SYMPLECTIC;
 
 	// Init boxes
-boxShape = make_shared<Shape>();
-boxShape->loadMesh(RESOURCE_DIR + "box2.obj");
+	boxShape = make_shared<Shape>();
+	boxShape->loadMesh(RESOURCE_DIR + "box2.obj");
 
-Matrix3d R;
-//R.setIdentity();
-R << 0, -1, 0,
-1, 0, 0,
-0, 0, 1;
-Vector3d p = Vector3d(0.0, 0.0, 0.0);
-Vector3d dimension = Vector3d(1.0, 4.0, 1.0);
+	Matrix3d R;
+	//R.setIdentity();
+	R << 0, -1, 0,
+		1, 0, 0,
+		0, 0, 1;
+	Vector3d p = Vector3d(0.0, 0.0, 0.0);
+	Vector3d dimension = Vector3d(1.0, 4.0, 1.0);
 
-auto box0 = make_shared<Rigid>(boxShape, R, p, dimension, scale, mass, isReduced);
-box0->setIndex(0);
-boxes.push_back(box0);
+	auto box0 = make_shared<Rigid>(boxShape, R, p, dimension, scale, mass, isReduced);
+	box0->setIndex(0);
+	boxes.push_back(box0);
 
-p += Vector3d(4.0, 0.0, 0.0);
-auto box1 = make_shared<Rigid>(boxShape, R, p, dimension, scale, mass, isReduced);
-box1->setIndex(1);
-box1->setParent(box0);
-//box0->addChild(box1);
-boxes.push_back(box1);
+	p += Vector3d(4.0, 0.0, 0.0);
+	auto box1 = make_shared<Rigid>(boxShape, R, p, dimension, scale, mass, isReduced);
+	box1->setIndex(1);
+	box1->setParent(box0);
+	//box0->addChild(box1);
+	boxes.push_back(box1);
 
-p += Vector3d(4.0, 0.0, 0.0);
-auto box2 = make_shared<Rigid>(boxShape, R, p, dimension, scale, mass, isReduced);
-box2->setIndex(2);
-box2->setParent(box1);
-//box1->addChild(box2);
-boxes.push_back(box2);
+	p += Vector3d(4.0, 0.0, 0.0);
+	auto box2 = make_shared<Rigid>(boxShape, R, p, dimension, scale, mass, isReduced);
+	box2->setIndex(2);
+	box2->setParent(box1);
+	//box1->addChild(box2);
+	boxes.push_back(box2);
 
-// Init joints
-auto joint1 = box1->getJoint();
-Matrix4d E_P_J;
-E_P_J.setIdentity();
-E_P_J(1, 3) = -2.0;
-Matrix4d E_C_J = box1->getE().inverse() * box0->getE() * E_P_J;
+	R.setIdentity();
+	p.setZero();
+	/*auto box3 = make_shared<Rigid>(boxShape, R, p, dimension, scale, mass, isReduced);
+	box3->setIndex(3);
+	boxes.push_back(box3);*/
 
-joint1->setE_P_J_0(E_P_J);
-joint1->setE_C_J_0(E_C_J);
-joint1->setTheta_0(0.0);
-joint1->reset();
+	// Init joints
+	auto joint1 = box1->getJoint();
+	Matrix4d E_P_J;
+	E_P_J.setIdentity();
+	E_P_J(1, 3) = -2.0;
+	Matrix4d E_C_J = box1->getE().inverse() * box0->getE() * E_P_J;
 
-auto joint2 = box2->getJoint();
-E_C_J = box2->getE().inverse() * box1->getE() * E_P_J;
+	joint1->setE_P_J_0(E_P_J);
+	joint1->setE_C_J_0(E_C_J);
+	joint1->setTheta_0(0.0);
+	joint1->reset();
 
-joint2->setE_P_J_0(E_P_J);
-joint2->setE_C_J_0(E_C_J);
-joint2->setTheta_0(0.0);
-joint2->reset();
+	auto joint2 = box2->getJoint();
+	E_C_J = box2->getE().inverse() * box1->getE() * E_P_J;
 
-y.push_back(0.0);
-y.push_back(0.0);
-y.push_back(0.0);
-y.push_back(0.0);
-y.resize(2 * (boxes.size() - 1));
+	joint2->setE_P_J_0(E_P_J);
+	joint2->setE_C_J_0(E_C_J);
+	joint2->setTheta_0(0.0);
+	joint2->reset();
 
-yp.push_back(0.0);
-yp.push_back(0.0);
-yp.push_back(0.0);
-yp.push_back(0.0);
-yp.resize(2 * (boxes.size() - 1));
+	y.push_back(0.0);
+	y.push_back(0.0);
+	y.push_back(0.0);
+	y.push_back(0.0);
+	y.resize(2 * (boxes.size() - 1));
 
-// Init solver	
-solver = make_shared<Solver>(boxes, isReduced, time_integrator);
+	yp.push_back(0.0);
+	yp.push_back(0.0);
+	yp.push_back(0.0);
+	yp.push_back(0.0);
+	yp.resize(2 * (boxes.size() - 1));
+
+	// Init WrapCylinder
+	cylinderShape = make_shared<Shape>();
+	cylinderShape->loadMesh(RESOURCE_DIR + "cylinder2.obj");
+	
+	Vector3d P, S, O, Z;
+	double rr = 0.5;
+	P << 1.0, 1.0, 1.0;
+	S << -1.0, -1.0, -1.0;
+	O << rr + box2->getDimension()(0), -0.5 * box2->getDimension()(1) + 1.0, 0.0;
+	Z << 0.0, 0.0, 1.0;
+	//R.setIdentity();
+	R << 1.0, 0.0, 0.0,
+		0.0, 0.0, 1.0,
+		0.0, -1.0, 0.0;
+	Matrix4d Ewrap;
+	Ewrap.setIdentity();
+	Ewrap.block<3, 3>(0, 0) = R;
+	Ewrap.block<3, 1>(0, 3) = O;
+
+	auto wrap_cylinder0 = make_shared<WrapCylinder>(cylinderShape, P, S, O, Z, O, R, rr);	
+
+	wrap_cylinders.push_back(wrap_cylinder0);
+	wrap_cylinder0->setE(box2->getE() * Ewrap);
+	box2->addCylinder(wrap_cylinder0);
+	// Init solver	
+	solver = make_shared<Solver>(boxes, isReduced, time_integrator);
 }
 
 void Scene::init()
 {
 	boxShape->init();
+	cylinderShape->init();
 }
 
 void Scene::tare()
@@ -191,7 +223,6 @@ void Scene::step()
 		solver->step(h);
 		for (int i = 0; i < (int)boxes.size(); ++i) {
 			boxes[i]->step(h);
-			cout << boxes[i]->getTwist() << endl;
 		}
 	}
 
@@ -200,7 +231,6 @@ void Scene::step()
 	computeEnergy();
 	saveData(10000);
 }
-
 
 void Scene::saveData(int num_steps) {
 	// Save data and plot in MATLAB
@@ -241,10 +271,14 @@ void Scene::computeEnergy() {
 	}
 }
 
-
 void Scene::draw(shared_ptr<MatrixStack> MV, const shared_ptr<Program> prog) const
 {
 	for (int i = 0; i < (int)boxes.size(); ++i) {
 		boxes[i]->draw(MV, prog);
+		
+	}
+	
+	for (int i = 0; i < (int)wrap_cylinders.size(); ++i) {
+		wrap_cylinders[i]->draw(MV, prog);
 	}
 }

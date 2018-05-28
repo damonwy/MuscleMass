@@ -13,6 +13,7 @@
 #include "Shape.h"
 #include "Program.h"
 #include "MatrixStack.h"
+#include "WrapCylinder.h"
 
 using namespace std;
 using namespace Eigen;
@@ -106,6 +107,12 @@ void Rigid::step(double h) {
 		Matrix4d E_C_J = getE().inverse() * parent->getE() * joint->getE_P_J();
 		this->joint->setE_C_J(E_C_J);
 	}
+
+	// Cylinders Update
+	for (int i = 0; i < (int)cylinders.size(); i++) {
+		Matrix4d E = this->E_W_0 * cylinders[i]->getE_P_0();
+		cylinders[i]->setE(E);
+	}
 	
 }
 
@@ -121,10 +128,10 @@ void Rigid::draw(shared_ptr<MatrixStack> MV, const shared_ptr<Program> prog) con
 		double theta_x = atan2(R(2, 1), R(2, 2));
 		double theta_y = atan2(-R(2, 0), sqrt(pow(R(2, 1), 2) + pow(R(2, 2), 2)));
 		double theta_z = atan2(R(1, 0), R(0, 0));
-		MV->rotate(theta_x, 1.0f, 0.0f, 0.0f);
-		MV->rotate(theta_y, 0.0f, 1.0f, 0.0f);
 		MV->rotate(theta_z, 0.0f, 0.0f, 1.0f);
-
+		MV->rotate(theta_y, 0.0f, 1.0f, 0.0f);
+		
+		MV->rotate(theta_x, 1.0f, 0.0f, 0.0f);
 		MV->scale(r);
 		glUniformMatrix4fv(prog->getUniform("MV"), 1, GL_FALSE, glm::value_ptr(MV->topMatrix()));
 		box->draw(prog);
@@ -304,6 +311,10 @@ int Rigid::getIndex() const {
 	return this->i;
 }
 
+Vector3d Rigid::getDimension() const {
+	return this->dimension;
+}
+
 // set
 void Rigid::setP(Eigen::Vector3d p) {
 	this->E_W_0.block<3, 1>(0, 3) = p;
@@ -350,6 +361,7 @@ void Rigid::setJointAngle(double _theta, bool isDrawing) {
 			this->E_W_0_temp = E_W_C;
 			if (isDrawing) {
 				this->E_W_0 = E_W_0_temp;
+				
 			}
 		}
 	}
@@ -368,6 +380,10 @@ void Rigid::setRotationAngle(double _theta) {
 
 void Rigid::addChild(shared_ptr<Rigid> _child) {
 	this->children.push_back(_child);
+}
+
+void Rigid::addCylinder(shared_ptr<WrapCylinder> _cylinder) {
+	this->cylinders.push_back(_cylinder);
 }
 
 Rigid::~Rigid()

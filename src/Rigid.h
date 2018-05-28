@@ -13,6 +13,7 @@ class Shape;
 class Program;
 class MatrixStack;
 class Joint;
+class WrapCylinder;
 
 typedef Eigen::Matrix<double, 6, 1> Vector6d;
 typedef Eigen::Matrix<double, 6, 6> Matrix6d;
@@ -45,6 +46,7 @@ public:
 	void addChild(std::shared_ptr<Rigid> _child);
 	void setJointAngle(double _theta, bool isDrawing);
 	void setRotationAngle(double _theta);
+	void addCylinder(std::shared_ptr<WrapCylinder> _cylinder);
 
 	// get
 	Eigen::Vector3d getP() const;
@@ -57,6 +59,7 @@ public:
 	Eigen::Matrix4d getEtemp() const;
 	std::shared_ptr<Rigid> getParent() const;
 	int getIndex() const;
+	Eigen::Vector3d getDimension() const;
 
 	static Eigen::Matrix4d inverse(const Eigen::Matrix4d &E);
 	static Matrix3x6d gamma(const Eigen::Vector3d &r);
@@ -71,18 +74,19 @@ public:
 	double m; // mass
 	bool isReduced; 
 	
-	Eigen::Vector3d dimension;
+	
 	Eigen::Vector3d grav;	
 
 private:
 	const std::shared_ptr<Shape> box;
 	std::shared_ptr<Rigid> parent;
 	std::vector< std::shared_ptr<Rigid> > children;
+	std::vector< std::shared_ptr<WrapCylinder> > cylinders;
 	std::shared_ptr<Joint> joint;
 	Eigen::Matrix4d E_W_0; // Where current transform is wrt world
 	Eigen::Matrix4d E_W_0_0; // Where current transform is wrt world at the start
 	Eigen::Matrix4d E_W_0_temp; // for computational purpose, not for drawing
-
+	Eigen::Vector3d dimension;
 	Matrix6d mass_mat;
 	Vector6d twist;
 	Vector6d force;

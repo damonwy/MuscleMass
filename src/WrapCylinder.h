@@ -26,6 +26,7 @@ class WrapCylinder : public WrapObst
 private:
 	Eigen::Vector3d vec_z;      // Cylinder Positive z axis
 	Eigen::Matrix4d E_W_0;		// Where current transform is wrt world
+	Eigen::Matrix4d E_P_0;		// Where the local frame is wrt parent
 	std::shared_ptr<Rigid> parent;
 	const std::shared_ptr<Shape> cylinder_shape;
 
@@ -49,10 +50,18 @@ public:
 		const Eigen::Vector3d &S,
 		const Eigen::Vector3d &O,
 		const Eigen::Vector3d &Z,
-		const double R)
-		: WrapObst(P, S, O, R), vec_z(Z), cylinder_shape(s)
-	{
+		const Eigen::Vector3d &p,
+		const Eigen::Matrix3d &R,
+		const double _r)
+		: WrapObst(P, S, O, _r), vec_z(Z), cylinder_shape(s)
+	{	
+		E_P_0.setIdentity();
+		E_P_0.block<3, 3>(0, 0) = R;
+		E_P_0.block<3, 1>(0, 3) = p;
+		E_W_0 = E_P_0;
+		
 		type = cylinder;
+		this->r = _r;
 	}
 
 	using WrapObst::compute;
@@ -68,6 +77,13 @@ public:
 	// get
 	Eigen::Vector3d getP() const;
 	Eigen::Matrix3d getR() const;
+	Eigen::Matrix4d getE() const;
+	Eigen::Matrix4d getE_P_0() const;
+
+	// set
+	void setP(Eigen::Vector3d p);
+	void setR(Eigen::Matrix3d R);
+	void setE(Eigen::Matrix4d E);
 
 	double r; // radius
 

@@ -16,6 +16,7 @@ class Shape;
 class Rigid;
 class Solver;
 class Joint;
+class WrapCylinder;
 
 class Scene
 {
@@ -56,8 +57,10 @@ private:
 	std::vector<double> yp;
 
 	std::shared_ptr<Shape> boxShape;
+	std::shared_ptr<Shape> cylinderShape;
 	std::vector< std::shared_ptr<Rigid> > boxes;
 	std::shared_ptr<Solver> solver;
+	std::vector< std::shared_ptr<WrapCylinder> > wrap_cylinders;
 };
 
 #endif // MUSCLEMASS_SRC_SCENE_H_
