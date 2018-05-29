@@ -14,6 +14,7 @@ class Program;
 class MatrixStack;
 class Joint;
 class WrapCylinder;
+class Particle;
 
 typedef Eigen::Matrix<double, 6, 1> Vector6d;
 typedef Eigen::Matrix<double, 6, 6> Matrix6d;
@@ -47,6 +48,7 @@ public:
 	void setJointAngle(double _theta, bool isDrawing);
 	void setRotationAngle(double _theta);
 	void addCylinder(std::shared_ptr<WrapCylinder> _cylinder);
+	void addPoint(std::shared_ptr<Particle> _point);
 
 	// get
 	Eigen::Vector3d getP() const;
@@ -82,6 +84,7 @@ private:
 	std::shared_ptr<Rigid> parent;
 	std::vector< std::shared_ptr<Rigid> > children;
 	std::vector< std::shared_ptr<WrapCylinder> > cylinders;
+	std::vector< std::shared_ptr<Particle> > points;
 	std::shared_ptr<Joint> joint;
 	Eigen::Matrix4d E_W_0; // Where current transform is wrt world
 	Eigen::Matrix4d E_W_0_0; // Where current transform is wrt world at the start

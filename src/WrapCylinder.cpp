@@ -12,6 +12,8 @@
 #include "Program.h"
 #include "MatrixStack.h"
 #include "Rigid.h"
+#include "Particle.h"
+#include "Vector.h"
 
 using namespace std;
 using namespace Eigen;
@@ -79,7 +81,7 @@ void WrapCylinder::compute()
 	// std::cout << Q.transpose() << std::endl << T.transpose() << std::endl;
 }
 
-MatrixXd WrapCylinder::getPoints(int num_points, double &theta_s, double &theta_e, Matrix3d &_M)
+MatrixXd WrapCylinder::getPoints(int num_points, double &theta_s, double &theta_e, Matrix3d &_M)const
 {
 	double theta_q = atan(this->point_q(1) / this->point_q(0));
 	if (this->point_q(0) < 0.0)
@@ -136,11 +138,18 @@ void WrapCylinder::reset() {
 }
 
 void WrapCylinder::step(double h) {
+	point_P = P->x;
+	point_O = O->x;
+	point_S = S->x;
+	vec_z = Z->dir;
 
+	compute();
 }
 
-void WrapCylinder::draw(shared_ptr<MatrixStack> MV, const shared_ptr<Program> prog) const {
+void WrapCylinder::draw(shared_ptr<MatrixStack> MV, const shared_ptr<Program> prog, const shared_ptr<Program> prog2, shared_ptr<MatrixStack> P) const {
 	if (cylinder_shape) {
+		glUniform3fv(prog->getUniform("kdFront"), 1, Vector3f(1.0, 0.0, 0.0).data());
+		glUniform3fv(prog->getUniform("kdBack"), 1, Vector3f(1.0, 1.0, 0.0).data());
 		MV->pushMatrix();
 		Vector3d x = getP();
 		MV->translate(x(0), x(1), x(2));
@@ -159,6 +168,33 @@ void WrapCylinder::draw(shared_ptr<MatrixStack> MV, const shared_ptr<Program> pr
 		MV->popMatrix();
 	}
 
+	prog->unbind();
+
+	prog2->bind();
+	glUniformMatrix4fv(prog2->getUniform("P"), 1, GL_FALSE, glm::value_ptr(P->topMatrix()));
+	glUniformMatrix4fv(prog2->getUniform("MV"), 1, GL_FALSE, glm::value_ptr(MV->topMatrix()));
+	MV->pushMatrix();
+	glUniformMatrix4fv(prog->getUniform("MV"), 1, GL_FALSE, glm::value_ptr(MV->topMatrix()));
+	glColor3f(0.0, 0.0, 0.0); // black
+	glLineWidth(3);
+	glBegin(GL_LINE_STRIP);
+	glVertex3f(this->point_S(0), this->point_S(1), this->point_S(2));
+
+	if (getStatus() == wrap) {
+		double theta_s, theta_e;
+		Matrix3d M;
+		MatrixXd points = getPoints(num_points, theta_s, theta_e, M);
+		//cout << points << endl;
+		for (int i = 0; i < points.cols(); i++) {
+			Vector3f p = points.block<3, 1>(0, i).cast<float>();
+			glVertex3f(p(0), p(1), p(2));
+		}
+
+	}
+	glVertex3f(this->point_P(0), this->point_P(1), this->point_P(2));
+	glEnd();
+	MV->popMatrix();
+	prog2->unbind();
 }
 
 // get
@@ -171,7 +207,7 @@ Matrix3d WrapCylinder::getR() const {
 }
 
 // set
-void WrapCylinder::setP(Vector3d p) {
+void WrapCylinder::setp(Vector3d p) {
 	this->E_W_0.block<3, 1>(0, 3) = p;
 }
 
@@ -181,6 +217,30 @@ void WrapCylinder::setR(Matrix3d R) {
 
 void WrapCylinder::setE(Matrix4d E) {
 	this->E_W_0 = E;
+}
+
+void WrapCylinder::setP(shared_ptr<Particle> _P) {
+	this->P= _P;
+	this->point_P = P->x;
+}
+
+void WrapCylinder::setS(shared_ptr<Particle> _S) {
+	this->S = _S;
+	this->point_S = S->x;
+}
+
+void WrapCylinder::setO(shared_ptr<Particle> _O) {
+	this->O = _O;
+	this->point_O = O->x;
+}
+
+void WrapCylinder::setZ(shared_ptr<Vector> _Z) {
+	this->Z = _Z;
+	this->vec_z = Z->dir;
+}
+
+void WrapCylinder::setNumPoints(int _num_points) {
+	this->num_points = _num_points;
 }
 
 Matrix4d WrapCylinder::getE() const {

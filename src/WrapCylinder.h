@@ -12,11 +12,13 @@
 
 #define EIGEN_DONT_ALIGN_STATICALLY
 #include <Eigen/Dense>
-
+class Particle;
+class Vector;
 class Shape;
 class Program;
 class MatrixStack;
 class Rigid;
+
 
 #include "WrapObst.h"
 
@@ -28,7 +30,12 @@ private:
 	Eigen::Matrix4d E_W_0;		// Where current transform is wrt world
 	Eigen::Matrix4d E_P_0;		// Where the local frame is wrt parent
 	std::shared_ptr<Rigid> parent;
+	std::shared_ptr<Particle> P;
+	std::shared_ptr<Particle> S;
+	std::shared_ptr<Particle> O;
+	std::shared_ptr<Vector> Z;
 	const std::shared_ptr<Shape> cylinder_shape;
+	int num_points;
 
 public:
 	// default constructor
@@ -46,21 +53,22 @@ public:
 	}
 
 	// constructor
-	WrapCylinder(const std::shared_ptr<Shape> s, const Eigen::Vector3d &P,
-		const Eigen::Vector3d &S,
-		const Eigen::Vector3d &O,
-		const Eigen::Vector3d &Z,
+	WrapCylinder(const std::shared_ptr<Shape> s, 
 		const Eigen::Vector3d &p,
 		const Eigen::Matrix3d &R,
-		const double _r)
-		: WrapObst(P, S, O, _r), vec_z(Z), cylinder_shape(s)
-	{	
+		const double _r,
+		const int _num_points)
+		: WrapObst(), cylinder_shape(s)
+	{		
+		//WrapObst(_P->x, _S->x, _O->x, _r),	
+
+		this->num_points = _num_points;
 		E_P_0.setIdentity();
-		E_P_0.block<3, 3>(0, 0) = R;
-		E_P_0.block<3, 1>(0, 3) = p;
-		E_W_0 = E_P_0;
+		this->E_P_0.block<3, 3>(0, 0) = R;
+		this->E_P_0.block<3, 1>(0, 3) = p;
+		this->E_W_0 = E_P_0;
 		
-		type = cylinder;
+		this->type = cylinder;
 		this->r = _r;
 	}
 
@@ -68,11 +76,11 @@ public:
 	void compute();
 
 	using WrapObst::getPoints;
-	Eigen::MatrixXd getPoints(int num_points, double &theta_s, double &theta_e, Eigen::Matrix3d &_M);
+	Eigen::MatrixXd getPoints(int num_points, double &theta_s, double &theta_e, Eigen::Matrix3d &_M) const;
 
 	void reset();
 	void step(double h);
-	void draw(std::shared_ptr<MatrixStack> MV, const std::shared_ptr<Program> prog) const;
+	void draw(std::shared_ptr<MatrixStack> MV, const std::shared_ptr<Program> prog, const std::shared_ptr<Program> prog2, std::shared_ptr<MatrixStack> P) const;
 
 	// get
 	Eigen::Vector3d getP() const;
@@ -81,9 +89,14 @@ public:
 	Eigen::Matrix4d getE_P_0() const;
 
 	// set
-	void setP(Eigen::Vector3d p);
+	void setp(Eigen::Vector3d p);
 	void setR(Eigen::Matrix3d R);
 	void setE(Eigen::Matrix4d E);
+	void setP(std::shared_ptr<Particle> _P);
+	void setS(std::shared_ptr<Particle> _S);
+	void setO(std::shared_ptr<Particle> _O);
+	void setZ(std::shared_ptr<Vector> _Z);
+	void setNumPoints(int _num_points);
 
 	double r; // radius
 

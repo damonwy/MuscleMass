@@ -75,7 +75,7 @@ public:
 		return this->path_length;
 	}
 
-	Status getStatus()
+	Status getStatus() const
 	{
 		return this->status;
 	}

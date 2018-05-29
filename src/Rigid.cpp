@@ -14,6 +14,7 @@
 #include "Program.h"
 #include "MatrixStack.h"
 #include "WrapCylinder.h"
+#include "Particle.h"
 
 using namespace std;
 using namespace Eigen;
@@ -112,8 +113,13 @@ void Rigid::step(double h) {
 	for (int i = 0; i < (int)cylinders.size(); i++) {
 		Matrix4d E = this->E_W_0 * cylinders[i]->getE_P_0();
 		cylinders[i]->setE(E);
+		
 	}
 	
+	// Points Update
+	for (int i = 0; i < (int)points.size(); i++) {
+		points[i]->update(this->E_W_0);
+	}
 }
 
 void Rigid::draw(shared_ptr<MatrixStack> MV, const shared_ptr<Program> prog) const
@@ -385,6 +391,11 @@ void Rigid::addChild(shared_ptr<Rigid> _child) {
 void Rigid::addCylinder(shared_ptr<WrapCylinder> _cylinder) {
 	this->cylinders.push_back(_cylinder);
 }
+
+void Rigid::addPoint(shared_ptr<Particle> _point) {
+	this->points.push_back(_point);
+}
+
 
 Rigid::~Rigid()
 {

@@ -23,6 +23,7 @@ public:
 	void tare();
 	void reset();
 	void draw(std::shared_ptr<MatrixStack> MV, const std::shared_ptr<Program> p) const;
+	void update(Eigen::Matrix4d E);
 	
 	double r; // radius
 	double m; // mass

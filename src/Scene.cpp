@@ -9,6 +9,7 @@
 #include "Solver.h"
 #include "Joint.h"
 #include "MatlabDebug.h"
+#include "Vector.h"
 
 using namespace std;
 using namespace Eigen;
@@ -109,12 +110,43 @@ void Scene::load(const string &RESOURCE_DIR)
 	yp.push_back(0.0);
 	yp.resize(2 * (boxes.size() - 1));
 
+	// Init Particles
+	sphereShape = make_shared<Shape>();
+	sphereShape->loadMesh(RESOURCE_DIR + "sphere2.obj");
+	auto wc_p = make_shared<Particle>(sphereShape);
+	points.push_back(wc_p);
+	wc_p->x0 = Vector3d(1.0, 2.0, 0.0);
+	wc_p->r = 0.1;
+	wc_p->update(box1->getE());
+	box1->addPoint(wc_p);
+
+	auto wc_s = make_shared<Particle>(sphereShape);
+	points.push_back(wc_s);
+	wc_s->x0 = Vector3d(1.0, -2.0, 0.0);
+	wc_s->r = 0.1;
+	wc_s->update(box2->getE());
+	box2->addPoint(wc_s);
+
+	double rr = 0.5;
+	auto wc_o = make_shared<Particle>(sphereShape);
+	points.push_back(wc_o);
+	wc_o->x0 << rr + box2->getDimension()(0), -0.5 * box2->getDimension()(1) + 1.0, 0.0;
+	wc_o->r = 0.1;
+	wc_o->update(box2->getE());
+	box2->addPoint(wc_o);
+
+	auto wc_z = make_shared<Vector>();
+	wc_z->dir0 << 0.0, 0.0, -1.0;
+	wc_z->dir = wc_z->dir0;
+	wc_z->setP(wc_o);
+	wc_z->update(box2->getE());
+
 	// Init WrapCylinder
 	cylinderShape = make_shared<Shape>();
 	cylinderShape->loadMesh(RESOURCE_DIR + "cylinder2.obj");
 	
 	Vector3d P, S, O, Z;
-	double rr = 0.5;
+	
 	P << 1.0, 1.0, 1.0;
 	S << -1.0, -1.0, -1.0;
 	O << rr + box2->getDimension()(0), -0.5 * box2->getDimension()(1) + 1.0, 0.0;
@@ -127,11 +159,16 @@ void Scene::load(const string &RESOURCE_DIR)
 	Ewrap.setIdentity();
 	Ewrap.block<3, 3>(0, 0) = R;
 	Ewrap.block<3, 1>(0, 3) = O;
+	int num_points = 20;
 
-	auto wrap_cylinder0 = make_shared<WrapCylinder>(cylinderShape, P, S, O, Z, O, R, rr);	
+	auto wrap_cylinder0 = make_shared<WrapCylinder>(cylinderShape, O, R, rr, num_points);
 
 	wrap_cylinders.push_back(wrap_cylinder0);
 	wrap_cylinder0->setE(box2->getE() * Ewrap);
+	wrap_cylinder0->setP(wc_p);
+	wrap_cylinder0->setS(wc_s);
+	wrap_cylinder0->setO(wc_o);
+	wrap_cylinder0->setZ(wc_z);
 	box2->addCylinder(wrap_cylinder0);
 	// Init solver	
 	solver = make_shared<Solver>(boxes, isReduced, time_integrator);
@@ -141,6 +178,7 @@ void Scene::init()
 {
 	boxShape->init();
 	cylinderShape->init();
+	sphereShape->init();
 }
 
 void Scene::tare()
@@ -226,6 +264,10 @@ void Scene::step()
 		}
 	}
 
+	for (int i = 0; i < (int)wrap_cylinders.size(); i++) {
+		wrap_cylinders[i]->step(h);
+	}	
+
 	t += h;
 	step_i += 1;
 	computeEnergy();
@@ -271,14 +313,21 @@ void Scene::computeEnergy() {
 	}
 }
 
-void Scene::draw(shared_ptr<MatrixStack> MV, const shared_ptr<Program> prog) const
+void Scene::draw(shared_ptr<MatrixStack> MV, const shared_ptr<Program> prog, const shared_ptr<Program> prog2, shared_ptr<MatrixStack> P) const
 {
 	for (int i = 0; i < (int)boxes.size(); ++i) {
 		boxes[i]->draw(MV, prog);
 		
 	}
-	
-	for (int i = 0; i < (int)wrap_cylinders.size(); ++i) {
-		wrap_cylinders[i]->draw(MV, prog);
+
+	for (int i = 0; i < (int)points.size(); ++i) {
+		points[i]->draw(MV, prog);
 	}
+
+	for (int i = 0; i < (int)wrap_cylinders.size(); ++i) {
+		wrap_cylinders[i]->draw(MV, prog, prog2, P);
+	}
+
+	
+
 }

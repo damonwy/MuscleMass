@@ -16,6 +16,7 @@ class Shape;
 class Rigid;
 class Solver;
 class Joint;
+class Vector;
 class WrapCylinder;
 
 class Scene
@@ -32,7 +33,7 @@ public:
 	void reset();
 	void step();
 	
-	void draw(std::shared_ptr<MatrixStack> MV, const std::shared_ptr<Program> prog) const;
+	void draw(std::shared_ptr<MatrixStack> MV, const std::shared_ptr<Program> prog, const std::shared_ptr<Program> prog2, std::shared_ptr<MatrixStack> P) const;
 	void computeEnergy();
 	void saveData(int num_steps);
 	double getTime() const { return t; }
@@ -56,11 +57,15 @@ private:
 	std::vector<double> y;
 	std::vector<double> yp;
 
+	std::shared_ptr<Shape> sphereShape;
 	std::shared_ptr<Shape> boxShape;
 	std::shared_ptr<Shape> cylinderShape;
+
+
 	std::vector< std::shared_ptr<Rigid> > boxes;
 	std::shared_ptr<Solver> solver;
 	std::vector< std::shared_ptr<WrapCylinder> > wrap_cylinders;
+	std::vector< std::shared_ptr<Particle> > points;
 };
 
 #endif // MUSCLEMASS_SRC_SCENE_H_

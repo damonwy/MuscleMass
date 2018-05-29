@@ -14,6 +14,7 @@
 #include "MatrixStack.h"
 
 using namespace std;
+using namespace Eigen;
 
 Particle::Particle() :
 	r(1.0),
@@ -21,7 +22,7 @@ Particle::Particle() :
 	i(-1),
 	x(0.0, 0.0, 0.0),
 	v(0.0, 0.0, 0.0),
-	fixed(true)
+	fixed(false)
 {
 	
 }
@@ -32,7 +33,7 @@ Particle::Particle(const shared_ptr<Shape> s) :
 	i(-1),
 	x(0.0, 0.0, 0.0),
 	v(0.0, 0.0, 0.0),
-	fixed(true),
+	fixed(false),
 	normal(0.0,0.0,0.0),
 	sphere(s)
 {
@@ -53,6 +54,15 @@ void Particle::reset()
 {
 	x = x0;
 	v = v0;
+}
+
+void Particle::update(Matrix4d E) {
+	Vector4d pos;
+	pos.segment<3>(0) = this->x0;
+	pos(3) = 1.0;
+
+	pos = E * pos;
+	this->x = pos.segment<3>(0);
 }
 
 void Particle::draw(shared_ptr<MatrixStack> MV, const shared_ptr<Program> prog) const
