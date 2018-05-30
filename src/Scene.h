@@ -65,8 +65,6 @@ private:
 
 	std::vector< std::shared_ptr<Rigid> > boxes;
 	std::shared_ptr<Solver> solver;
-	std::vector< std::shared_ptr<WrapCylinder> > wrap_cylinders;
-	std::vector< std::shared_ptr<Particle> > points;
 
 	nlohmann::json js;
 };

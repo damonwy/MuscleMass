@@ -58,23 +58,27 @@ void Scene::load(const string &RESOURCE_DIR)
 	R << 0, -1, 0,
 		1, 0, 0,
 		0, 0, 1;
+
 	Vector3d p;
 	p.setZero();
-	Vector3d dimension = Vector3d(1.0, 4.0, 1.0);
 
-	auto box0 = make_shared<Rigid>(boxShape, R, p, dimension, js["scale"], js["mass"], js["isReduced"]);
+	Vector3d dimension = Vector3d(1.0, 4.0, 1.0);
+	double mass = js["mass"];
+	double scale = js["scale"];
+
+	auto box0 = make_shared<Rigid>(boxShape, R, p, dimension, scale, mass, js["isReduced"]);
 	box0->setIndex(0);
 	boxes.push_back(box0);
 
 	p += Vector3d(4.0, 0.0, 0.0);
-	auto box1 = make_shared<Rigid>(boxShape, R, p, dimension, js["scale"], js["mass"], js["isReduced"]);
+	auto box1 = make_shared<Rigid>(boxShape, R, p, dimension, scale, mass, js["isReduced"]);
 	box1->setIndex(1);
 	box1->setParent(box0);
 	//box0->addChild(box1);
 	boxes.push_back(box1);
 
 	p += Vector3d(4.0, 0.0, 0.0);
-	auto box2 = make_shared<Rigid>(boxShape, R, p, dimension, js["scale"], js["mass"], js["isReduced"]);
+	auto box2 = make_shared<Rigid>(boxShape, R, p, dimension, scale, mass, js["isReduced"]);
 	box2->setIndex(2);
 	box2->setParent(box1);
 	//box1->addChild(box2);
@@ -82,7 +86,7 @@ void Scene::load(const string &RESOURCE_DIR)
 
 	R.setIdentity();
 	p.setZero();
-	/*auto box3 = make_shared<Rigid>(boxShape, R, p, dimension, js["scale"], js["mass"], js["isReduced"]);
+	/*auto box3 = make_shared<Rigid>(boxShape, R, p, dimension, scale, mass, js["isReduced"]);
 	box3->setIndex(3);
 	boxes.push_back(box3);*/
 
@@ -123,14 +127,12 @@ void Scene::load(const string &RESOURCE_DIR)
 	sphereShape = make_shared<Shape>();
 	sphereShape->loadMesh(RESOURCE_DIR + "sphere2.obj");
 	auto wc_p = make_shared<Particle>(sphereShape);
-	points.push_back(wc_p);
 	wc_p->x0 = Vector3d(1.0, 2.0, 0.0);
 	wc_p->r = 0.1;
 	wc_p->update(box1->getE());
 	box1->addPoint(wc_p);
 
 	auto wc_s = make_shared<Particle>(sphereShape);
-	points.push_back(wc_s);
 	wc_s->x0 = Vector3d(1.0, -2.0, 0.0);
 	wc_s->r = 0.1;
 	wc_s->update(box2->getE());
@@ -138,7 +140,6 @@ void Scene::load(const string &RESOURCE_DIR)
 
 	double cylinder_radius = js["cylinder_radius"];
 	auto wc_o = make_shared<Particle>(sphereShape);
-	points.push_back(wc_o);
 	wc_o->x0 << cylinder_radius + box2->getDimension()(0), -0.5 * box2->getDimension()(1) + 1.0, 0.0;
 	wc_o->r = 0.1;
 	wc_o->update(box2->getE());
@@ -169,7 +170,6 @@ void Scene::load(const string &RESOURCE_DIR)
 
 	auto wrap_cylinder0 = make_shared<WrapCylinder>(cylinderShape, O, R, cylinder_radius, js["num_points_on_arc"]);
 
-	wrap_cylinders.push_back(wrap_cylinder0);
 	wrap_cylinder0->setE(box2->getE() * Ewrap);
 	wrap_cylinder0->setP(wc_p);
 	wrap_cylinder0->setS(wc_s);
@@ -322,6 +322,5 @@ void Scene::draw(shared_ptr<MatrixStack> MV, const shared_ptr<Program> prog, con
 {
 	for (int i = 0; i < (int)boxes.size(); ++i) {
 		boxes[i]->draw(MV, prog, prog2, P);
-		
 	}
 }
