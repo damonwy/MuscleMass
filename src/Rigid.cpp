@@ -111,12 +111,28 @@ void Rigid::step(double h) {
 	}
 
 	// Cylinders Update
-	for (int i = 0; i < (int)cylinders.size(); i++) {
-		Matrix4d E = this->E_W_0 * cylinders[i]->getE_P_0();
-		cylinders[i]->setE(E);
-		cylinders[i]->step();
+	if (isCylinder) {
+		for (int i = 0; i < (int)cylinders.size(); i++) {
+			Matrix4d E = this->E_W_0 * cylinders[i]->getE_P_0();
+			cylinders[i]->setE(E);
+			cylinders[i]->step();
+		}
 	}
-	
+
+	// Double Cylinders Update
+	if (isDoubleCylinder) {
+		for (int i = 0; i < (int)double_cylinders.size(); i++) {
+			// Update U
+			Matrix4d E = double_cylinders[i]->getParent_U()->getE() * double_cylinders[i]->getE_P_U();
+			double_cylinders[i]->setE_U(E);
+
+			//Update V
+			E = double_cylinders[i]->getParent_V()->getE() * double_cylinders[i]->getE_P_V();
+			double_cylinders[i]->setE_V(E);
+			double_cylinders[i]->step();
+		}
+	}
+
 	// Points Update
 	for (int i = 0; i < (int)points.size(); i++) {
 		points[i]->update(this->E_W_0);
@@ -136,17 +152,21 @@ void Rigid::draw(shared_ptr<MatrixStack> MV, const shared_ptr<Program> prog, con
 		double theta_y = atan2(-R(2, 0), sqrt(pow(R(2, 1), 2) + pow(R(2, 2), 2)));
 		double theta_z = atan2(R(1, 0), R(0, 0));
 		MV->rotate(theta_z, 0.0f, 0.0f, 1.0f);
-		MV->rotate(theta_y, 0.0f, 1.0f, 0.0f);
-		
+		MV->rotate(theta_y, 0.0f, 1.0f, 0.0f);	
 		MV->rotate(theta_x, 1.0f, 0.0f, 0.0f);
 		MV->scale(r);
 		glUniformMatrix4fv(prog->getUniform("MV"), 1, GL_FALSE, glm::value_ptr(MV->topMatrix()));
 		box->draw(prog);
 		MV->popMatrix();
+	}
+
+	if (isCylinder) {
 		for (int i = 0; i < (int)cylinders.size(); i++) {
 			cylinders[i]->draw(MV, prog, prog2, P);
 		}
+	}
 
+	if (isDoubleCylinder) {
 		for (int i = 0; i < (int)double_cylinders.size(); i++) {
 			double_cylinders[i]->draw(MV, prog, prog2, P);
 		}
@@ -377,10 +397,26 @@ void Rigid::setJointAngle(double _theta, bool isDrawing) {
 				this->E_W_0 = E_W_0_temp;
 
 				// Cylinders Update
-				for (int i = 0; i < (int)cylinders.size(); i++) {
-					Matrix4d E = this->E_W_0 * cylinders[i]->getE_P_0();
-					cylinders[i]->setE(E);
-					cylinders[i]->step();
+				if (isCylinder) {
+					for (int i = 0; i < (int)cylinders.size(); i++) {
+						Matrix4d E = this->E_W_0 * cylinders[i]->getE_P_0();
+						cylinders[i]->setE(E);
+						cylinders[i]->step();
+					}
+				}
+
+				// Double Cylinders Update
+				if (isDoubleCylinder) {
+					for (int i = 0; i < (int)double_cylinders.size(); i++) {
+						// Update U
+						Matrix4d E = double_cylinders[i]->getParent_U()->getE() * double_cylinders[i]->getE_P_U();				
+						double_cylinders[i]->setE_U(E);
+					
+						//Update V
+						E = double_cylinders[i]->getParent_V()->getE() * double_cylinders[i]->getE_P_V();
+						double_cylinders[i]->setE_V(E);
+						double_cylinders[i]->step();
+					}
 				}
 
 				// Points Update
@@ -397,12 +433,22 @@ void Rigid::setJointAngle(double _theta, bool isDrawing) {
 		this->joint->setE_C_J(E_C_J);
 	}
 
-
-
 }
 
 void Rigid::setRotationAngle(double _theta) {
 	this->joint->setTheta(_theta);
+}
+
+void Rigid::setCylinderStatus(bool _isCylinder) {
+	this->isCylinder = _isCylinder;
+}
+
+void Rigid::setDoubleCylinderStatus(bool _isDoubleCylinder) {
+	this->isDoubleCylinder = _isDoubleCylinder;
+}
+
+void Rigid::setSphereStatus(bool _isSphere) {
+	this->isSphere = _isSphere;
 }
 
 void Rigid::addChild(shared_ptr<Rigid> _child) {

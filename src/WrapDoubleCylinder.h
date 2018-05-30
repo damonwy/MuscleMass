@@ -45,20 +45,21 @@ private:
 	std::shared_ptr<Particle> U;	// U Cylinder Origin
 	Eigen::Matrix4d E_W_U;			// Where current transform is wrt world(updated)
 	Eigen::Matrix4d E_P_U;			// Where the local frame is wrt parent(fixed)
-	Eigen::MatrixXd arc_points_U;	// each col stores the position of a point in that arc
+
 	std::shared_ptr<Rigid> parent_U;
 	std::shared_ptr<Vector> z_U;		// Z axis of Cylinder U(direction matters)
 
 	std::shared_ptr<Particle> V;		// V Cylinder Origin
 	Eigen::Matrix4d E_W_V;		
 	Eigen::Matrix4d E_P_V;		
-	Eigen::MatrixXd arc_points_V; 
+ 
 	std::shared_ptr<Rigid> parent_V;
 	std::shared_ptr<Vector> z_V;		// Z axis of Cylinder V(direction matters)
 
 	std::shared_ptr<Particle> P;
 	std::shared_ptr<Particle> S;
 
+	Eigen::MatrixXd arc_points;	// each col stores the position of a point in that arc
 	const std::shared_ptr<Shape> cylinder_shape;
 	int num_points;
 
@@ -90,11 +91,8 @@ public:
 		: WrapObst(),
 		radius_U(R_U), radius_V(R_V), cylinder_shape(s), num_points(_num_points)
 	{
-		type = double_cylinder;
-
-		// todo
-		this->arc_points_U.resize(3, this->num_points + 1);
-		this->arc_points_V.resize(3, this->num_points + 1);
+		type = double_cylinder;	
+		this->arc_points.resize(3, 3 * this->num_points + 1);
 	}
 
 	using WrapObst::compute;
@@ -117,6 +115,9 @@ public:
 	Eigen::Matrix4d getE_V() const;
 	Eigen::Matrix4d getE_P_V() const;
 
+	std::shared_ptr<Rigid> getParent_U() const;
+	std::shared_ptr<Rigid> getParent_V() const;
+
 	// set
 	void setE_U(Eigen::Matrix4d E);
 	void setE_V(Eigen::Matrix4d E);
@@ -131,7 +132,11 @@ public:
 	void setZ_V(std::shared_ptr<Vector> _z_V);
 	void setNumPoints(int _num_points);
 
+	void setParent_U(std::shared_ptr<Rigid> _parent_U);
+	void setParent_V(std::shared_ptr<Rigid> _parent_V);
 
+	void setE_P_U(Eigen::Matrix4d E);
+	void setE_P_V(Eigen::Matrix4d E);
 	
 };
 

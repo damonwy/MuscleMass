@@ -39,12 +39,17 @@ public:
 	void computeTempForces();
 
 	// set
+
 	void setIndex(int _i);
 	void setP(Eigen::Vector3d p);
 	void setR(Eigen::Matrix3d R);
 	void setTwist(Vector6d _twist);
 	void setForce(Vector6d _force);
 	void setParent(std::shared_ptr<Rigid> _parent);
+	void setCylinderStatus(bool _isCylinder);
+	void setDoubleCylinderStatus(bool _isDoubleCylinder);
+	void setSphereStatus(bool _isSphere);
+
 	void addChild(std::shared_ptr<Rigid> _child);
 	void setJointAngle(double _theta, bool isDrawing);
 	void setRotationAngle(double _theta);
@@ -77,6 +82,9 @@ public:
 	double r; // radius
 	double m; // mass
 	bool isReduced; 
+	bool isCylinder;
+	bool isDoubleCylinder;
+	bool isSphere;
 	
 	
 	Eigen::Vector3d grav;	

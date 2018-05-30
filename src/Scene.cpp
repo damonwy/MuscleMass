@@ -165,7 +165,7 @@ void Scene::load(const string &RESOURCE_DIR)
 	wc_z->update(box2->getE());
 
 	auto wdc_z_u = make_shared<Vector>();
-	wdc_z_u->dir0 << 0.0, 0.0, 1.0;
+	wdc_z_u->dir0 << 0.0, 0.0, -1.0;
 	wdc_z_u->dir = wdc_z_u->dir0;
 	wdc_z_u->setP(wdc_u);
 	wdc_z_u->update(box1->getE());
@@ -192,19 +192,17 @@ void Scene::load(const string &RESOURCE_DIR)
 	Ewrap.block<3, 1>(0, 3) = O;
 
 	int num_points_on_arc = js["num_points_on_arc"];
-	auto wrap_cylinder0 = make_shared<WrapCylinder>(cylinderShape, O, R, cylinder_radius, num_points_on_arc);
 
+	auto wrap_cylinder0 = make_shared<WrapCylinder>(cylinderShape, O, R, cylinder_radius, num_points_on_arc);
 	wrap_cylinder0->setE(box2->getE() * Ewrap);
 	wrap_cylinder0->setP(wc_p);
 	wrap_cylinder0->setS(wc_s);
 	wrap_cylinder0->setO(wc_o);
 	wrap_cylinder0->setZ(wc_z);
+
 	box2->addCylinder(wrap_cylinder0);
 
 	// Init WrapDoubleCylinder
-
-
-
 	auto wrap_doublecylinder = make_shared<WrapDoubleCylinder>(cylinderShape, cylinder_radius, cylinder_radius, num_points_on_arc);
 	wrap_doublecylinder->setP(wc_p);
 	wrap_doublecylinder->setS(wc_s);
@@ -213,8 +211,15 @@ void Scene::load(const string &RESOURCE_DIR)
 	wrap_doublecylinder->setZ_U(wdc_z_u);
 	wrap_doublecylinder->setZ_V(wdc_z_v);
 	wrap_doublecylinder->setE_U(box1->getE() * Ewrap);
+	wrap_doublecylinder->setE_P_U(Ewrap);
 	wrap_doublecylinder->setE_V(box2->getE() * Ewrap);
-	box2->addDoubleCylinder(wrap_doublecylinder);
+	wrap_doublecylinder->setE_P_V(Ewrap);
+	wrap_doublecylinder->setParent_U(box1);
+	wrap_doublecylinder->setParent_V(box2);
+
+	box2->addDoubleCylinder(wrap_doublecylinder); // Only add double cylinder to the latest updated rigid body, so that all the positions are updated
+	box2->setCylinderStatus(js["isCylinder"]);
+	box2->setDoubleCylinderStatus(js["isDoubleCylinder"]);
 
 	// Init solver	
 	solver = make_shared<Solver>(boxes, js["isReduced"], time_integrator);

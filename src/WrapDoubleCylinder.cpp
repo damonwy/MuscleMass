@@ -272,10 +272,14 @@ Eigen::MatrixXd WrapDoubleCylinder::getPoints(int num_points)
 
 	z_i = z_s;
 	dz = (z_e - z_s) / num_points;
+
+	int tt = col;
+	col = 3 * num_points ;
+	
 	for (double i = theta_s; i <= theta_e + 0.001;
 		i += (theta_e - theta_s) / num_points)
-	{
-		if (col == 3 * num_points + 1) {
+	{	
+		if (tt == 3 * num_points + 1) {
 			break;
 		}
 		Eigen::Vector3d point = this->M_V.transpose() *
@@ -283,7 +287,8 @@ Eigen::MatrixXd WrapDoubleCylinder::getPoints(int num_points)
 				this->radius_V * sin(i), z_i) +
 			this->point_V;
 		z_i += dz;
-		points.col(col++) = point;
+		points.col(col--) = point;
+		tt++;
 	}
 
 	return points;
@@ -299,20 +304,21 @@ void WrapDoubleCylinder::step() {
 	compute();
 
 	if (this->status == wrap) {
-		this->arc_points_U = getPoints(num_points);//todo
+		this->arc_points = getPoints(this->num_points);
 	}
 }
 
 void WrapDoubleCylinder::draw(shared_ptr<MatrixStack> MV, const shared_ptr<Program> prog, const shared_ptr<Program> prog2, shared_ptr<MatrixStack> P) const {
-
 	// Draw double cylinder
+	prog->bind();
+
 	if (cylinder_shape) {
+		// Draw U
 		glUniform3fv(prog->getUniform("kdFront"), 1, Vector3f(1.0, 0.0, 0.0).data());
 		glUniform3fv(prog->getUniform("kdBack"), 1, Vector3f(1.0, 1.0, 0.0).data());
 		MV->pushMatrix();
 		Vector3d x = getp_U();
 		MV->translate(x(0), x(1), x(2));
-
 		// Decompose R into 3 Euler angles
 		Matrix3d R = getR_U();
 		double theta_x = atan2(R(2, 1), R(2, 2));
@@ -325,30 +331,30 @@ void WrapDoubleCylinder::draw(shared_ptr<MatrixStack> MV, const shared_ptr<Progr
 		glUniformMatrix4fv(prog->getUniform("MV"), 1, GL_FALSE, glm::value_ptr(MV->topMatrix()));
 		cylinder_shape->draw(prog);
 		MV->popMatrix();
-
-		//MV->pushMatrix();
-		//x = this->getp_V();
-		//MV->translate(x(0), x(1), x(2));
-
-		//// Decompose R into 3 Euler angles
-		//R = this->getR_V();
-		//theta_x = atan2(R(2, 1), R(2, 2));
-		//theta_y = atan2(-R(2, 0), sqrt(pow(R(2, 1), 2) + pow(R(2, 2), 2)));
-		//theta_z = atan2(R(1, 0), R(0, 0));
-		//MV->rotate(theta_z, 0.0f, 0.0f, 1.0f);
-		//MV->rotate(theta_y, 0.0f, 1.0f, 0.0f);
-		//MV->rotate(theta_x, 1.0f, 0.0f, 0.0f);
-		//MV->scale(this->radius_V);
-		//glUniformMatrix4fv(prog->getUniform("MV"), 1, GL_FALSE, glm::value_ptr(MV->topMatrix()));
-		//cylinder_shape->draw(prog);
-		//MV->popMatrix();
+		
+		// Draw V
+		MV->pushMatrix();
+		x = this->getp_V();
+		MV->translate(x(0), x(1), x(2));
+		// Decompose R into 3 Euler angles
+		R = this->getR_V();
+		theta_x = atan2(R(2, 1), R(2, 2));
+		theta_y = atan2(-R(2, 0), sqrt(pow(R(2, 1), 2) + pow(R(2, 2), 2)));
+		theta_z = atan2(R(1, 0), R(0, 0));
+		MV->rotate(theta_z, 0.0f, 0.0f, 1.0f);
+		MV->rotate(theta_y, 0.0f, 1.0f, 0.0f);
+		MV->rotate(theta_x, 1.0f, 0.0f, 0.0f);
+		MV->scale(this->radius_V);
+		glUniformMatrix4fv(prog->getUniform("MV"), 1, GL_FALSE, glm::value_ptr(MV->topMatrix()));
+		cylinder_shape->draw(prog);
+		MV->popMatrix();	
 	}
 
 	// Draw P, S, U, V points
-	/*this->P->draw(MV, prog);
+	this->P->draw(MV, prog);
 	this->S->draw(MV, prog);
 	this->U->draw(MV, prog);
-	this->V->draw(MV, prog);*/
+	this->V->draw(MV, prog);
 
 	prog->unbind();
 
@@ -360,23 +366,22 @@ void WrapDoubleCylinder::draw(shared_ptr<MatrixStack> MV, const shared_ptr<Progr
 	glUniformMatrix4fv(prog->getUniform("MV"), 1, GL_FALSE, glm::value_ptr(MV->topMatrix()));
 	glColor3f(0.0, 0.0, 0.0); // black
 	glLineWidth(3);
-	glBegin(GL_LINE_STRIP);
-	glVertex3f(this->point_S(0), this->point_S(1), this->point_S(2));
 
+	glBegin(GL_LINE_STRIP);
+	glVertex3f(this->point_P(0), this->point_P(1), this->point_P(2));
 	//todo
-	/*if (this->status == wrap) {
+	if (this->status == wrap) {
 		for (int i = 0; i < this->arc_points.cols(); i++) {
 			Vector3f p = this->arc_points.block<3, 1>(0, i).cast<float>();
 			glVertex3f(p(0), p(1), p(2));
 		}
-	}*/
-
-	glVertex3f(this->point_P(0), this->point_P(1), this->point_P(2));
+	}
+	glVertex3f(this->point_S(0), this->point_S(1), this->point_S(2));
 	glEnd();
 
 	// Draw z axis
-	//z_U->draw(MV, P, prog2);
-	//z_V->draw(MV, P, prog2);
+	z_U->draw(MV, P, prog2);
+	z_V->draw(MV, P, prog2);
 
 	MV->popMatrix();
 	prog2->unbind();
@@ -443,6 +448,23 @@ void WrapDoubleCylinder::setNumPoints(int _num_points) {
 	this->num_points = _num_points;
 }
 
+void WrapDoubleCylinder::setParent_U(std::shared_ptr<Rigid> _parent_U) {
+	this->parent_U = _parent_U;
+}
+
+void WrapDoubleCylinder::setParent_V(std::shared_ptr<Rigid> _parent_V) {
+	this->parent_V = _parent_V;
+}
+
+void WrapDoubleCylinder::setE_P_U(Eigen::Matrix4d E) {
+	this->E_P_U = E;
+}
+
+void WrapDoubleCylinder::setE_P_V(Eigen::Matrix4d E) {
+	this->E_P_V = E;
+}
+
+
 Matrix4d WrapDoubleCylinder::getE_U() const {
 	return this->E_W_U;
 }
@@ -457,4 +479,12 @@ Matrix4d WrapDoubleCylinder::getE_P_U() const {
 
 Matrix4d WrapDoubleCylinder::getE_P_V() const {
 	return this->E_P_V;
+}
+
+shared_ptr<Rigid> WrapDoubleCylinder::getParent_U() const {
+	return this->parent_U;
+}
+
+shared_ptr<Rigid> WrapDoubleCylinder::getParent_V() const {
+	return this->parent_V;
 }
