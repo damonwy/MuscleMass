@@ -14,6 +14,7 @@
 #include "Program.h"
 #include "MatrixStack.h"
 #include "WrapCylinder.h"
+#include "WrapDoubleCylinder.h"
 #include "Particle.h"
 
 using namespace std;
@@ -146,7 +147,9 @@ void Rigid::draw(shared_ptr<MatrixStack> MV, const shared_ptr<Program> prog, con
 			cylinders[i]->draw(MV, prog, prog2, P);
 		}
 
-		
+		for (int i = 0; i < (int)double_cylinders.size(); i++) {
+			double_cylinders[i]->draw(MV, prog, prog2, P);
+		}
 	}
 }
 
@@ -408,6 +411,10 @@ void Rigid::addChild(shared_ptr<Rigid> _child) {
 
 void Rigid::addCylinder(shared_ptr<WrapCylinder> _cylinder) {
 	this->cylinders.push_back(_cylinder);
+}
+
+void Rigid::addDoubleCylinder(shared_ptr<WrapDoubleCylinder> _double_cylinders) {
+	this->double_cylinders.push_back(_double_cylinders);
 }
 
 void Rigid::addPoint(shared_ptr<Particle> _point) {

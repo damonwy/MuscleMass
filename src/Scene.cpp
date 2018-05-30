@@ -8,6 +8,7 @@
 #include "Program.h"
 #include "Rigid.h"
 #include "WrapCylinder.h"
+#include "WrapDoubleCylinder.h"
 #include "Solver.h"
 #include "Joint.h"
 #include "MatlabDebug.h"
@@ -145,20 +146,42 @@ void Scene::load(const string &RESOURCE_DIR)
 	wc_o->update(box2->getE());
 	box2->addPoint(wc_o);
 
+	auto wdc_u = make_shared<Particle>(sphereShape);
+	wdc_u->x0 << cylinder_radius + box1->getDimension()(0), -0.5 * box1->getDimension()(1) + 1.0, 0.0;
+	wdc_u->r = 0.1;
+	wdc_u->update(box1->getE());
+	box1->addPoint(wdc_u);
+
+	auto wdc_v = make_shared<Particle>(sphereShape);
+	wdc_v->x0 << cylinder_radius + box2->getDimension()(0), -0.5 * box2->getDimension()(1) + 1.0, 0.0;
+	wdc_v->r = 0.1;
+	wdc_v->update(box2->getE());
+	box2->addPoint(wdc_v);
+
 	auto wc_z = make_shared<Vector>();
 	wc_z->dir0 << 0.0, 0.0, 1.0;
 	wc_z->dir = wc_z->dir0;
 	wc_z->setP(wc_o);
 	wc_z->update(box2->getE());
 
+	auto wdc_z_u = make_shared<Vector>();
+	wdc_z_u->dir0 << 0.0, 0.0, 1.0;
+	wdc_z_u->dir = wdc_z_u->dir0;
+	wdc_z_u->setP(wdc_u);
+	wdc_z_u->update(box1->getE());
+
+	auto wdc_z_v = make_shared<Vector>();
+	wdc_z_v->dir0 << 0.0, 0.0, 1.0;
+	wdc_z_v->dir = wdc_z_v->dir0;
+	wdc_z_v->setP(wdc_v);
+	wdc_z_v->update(box2->getE());
+
 	// Init WrapCylinder
 	cylinderShape = make_shared<Shape>();
 	cylinderShape->loadMesh(RESOURCE_DIR + "cylinder2.obj");
 	
 	Vector3d O = Vector3d(cylinder_radius + box2->getDimension()(0), -0.5 * box2->getDimension()(1) + 1.0, 0.0);
-	cout << box2->getDimension()(0) << endl;
-
-
+	
 	R << 1.0, 0.0, 0.0,
 		0.0, 0.0, 1.0,
 		0.0, -1.0, 0.0;
@@ -168,7 +191,8 @@ void Scene::load(const string &RESOURCE_DIR)
 	Ewrap.block<3, 3>(0, 0) = R;
 	Ewrap.block<3, 1>(0, 3) = O;
 
-	auto wrap_cylinder0 = make_shared<WrapCylinder>(cylinderShape, O, R, cylinder_radius, js["num_points_on_arc"]);
+	int num_points_on_arc = js["num_points_on_arc"];
+	auto wrap_cylinder0 = make_shared<WrapCylinder>(cylinderShape, O, R, cylinder_radius, num_points_on_arc);
 
 	wrap_cylinder0->setE(box2->getE() * Ewrap);
 	wrap_cylinder0->setP(wc_p);
@@ -176,6 +200,21 @@ void Scene::load(const string &RESOURCE_DIR)
 	wrap_cylinder0->setO(wc_o);
 	wrap_cylinder0->setZ(wc_z);
 	box2->addCylinder(wrap_cylinder0);
+
+	// Init WrapDoubleCylinder
+
+
+
+	auto wrap_doublecylinder = make_shared<WrapDoubleCylinder>(cylinderShape, cylinder_radius, cylinder_radius, num_points_on_arc);
+	wrap_doublecylinder->setP(wc_p);
+	wrap_doublecylinder->setS(wc_s);
+	wrap_doublecylinder->setU(wdc_u);
+	wrap_doublecylinder->setV(wdc_v);
+	wrap_doublecylinder->setZ_U(wdc_z_u);
+	wrap_doublecylinder->setZ_V(wdc_z_v);
+	wrap_doublecylinder->setE_U(box1->getE() * Ewrap);
+	wrap_doublecylinder->setE_V(box2->getE() * Ewrap);
+	box2->addDoubleCylinder(wrap_doublecylinder);
 
 	// Init solver	
 	solver = make_shared<Solver>(boxes, js["isReduced"], time_integrator);

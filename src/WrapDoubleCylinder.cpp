@@ -1,4 +1,22 @@
+#include <iostream>
+#define GLEW_STATIC
+#include <GL/glew.h>
+#include <GLFW/glfw3.h>
+
+#define GLM_FORCE_RADIANS
+#include <glm/glm.hpp>
+#include <glm/gtc/type_ptr.hpp>
+
 #include "WrapDoubleCylinder.h"
+#include "Shape.h"
+#include "Program.h"
+#include "MatrixStack.h"
+#include "Rigid.h"
+#include "Particle.h"
+#include "Vector.h"
+
+using namespace std;
+using namespace Eigen;
 
 void WrapDoubleCylinder::compute()
 {
@@ -167,7 +185,6 @@ void WrapDoubleCylinder::compute()
 	*/
 }
 
-
 Eigen::MatrixXd WrapDoubleCylinder::getPoints(int num_points)
 {
 	double theta_q = atan(this->point_q(1) / this->point_q(0));
@@ -270,4 +287,174 @@ Eigen::MatrixXd WrapDoubleCylinder::getPoints(int num_points)
 	}
 
 	return points;
+}
+
+void WrapDoubleCylinder::step() {
+	point_P = P->x;
+	point_U = U->x;
+	point_V = V->x;
+	point_S = S->x;
+	vec_z_U = z_U->dir;
+	vec_z_V = z_V->dir;
+	compute();
+
+	if (this->status == wrap) {
+		this->arc_points_U = getPoints(num_points);//todo
+	}
+}
+
+void WrapDoubleCylinder::draw(shared_ptr<MatrixStack> MV, const shared_ptr<Program> prog, const shared_ptr<Program> prog2, shared_ptr<MatrixStack> P) const {
+
+	// Draw double cylinder
+	if (cylinder_shape) {
+		glUniform3fv(prog->getUniform("kdFront"), 1, Vector3f(1.0, 0.0, 0.0).data());
+		glUniform3fv(prog->getUniform("kdBack"), 1, Vector3f(1.0, 1.0, 0.0).data());
+		MV->pushMatrix();
+		Vector3d x = getp_U();
+		MV->translate(x(0), x(1), x(2));
+
+		// Decompose R into 3 Euler angles
+		Matrix3d R = getR_U();
+		double theta_x = atan2(R(2, 1), R(2, 2));
+		double theta_y = atan2(-R(2, 0), sqrt(pow(R(2, 1), 2) + pow(R(2, 2), 2)));
+		double theta_z = atan2(R(1, 0), R(0, 0));
+		MV->rotate(theta_z, 0.0f, 0.0f, 1.0f);
+		MV->rotate(theta_y, 0.0f, 1.0f, 0.0f);
+		MV->rotate(theta_x, 1.0f, 0.0f, 0.0f);
+		MV->scale(this->radius_U);
+		glUniformMatrix4fv(prog->getUniform("MV"), 1, GL_FALSE, glm::value_ptr(MV->topMatrix()));
+		cylinder_shape->draw(prog);
+		MV->popMatrix();
+
+		//MV->pushMatrix();
+		//x = this->getp_V();
+		//MV->translate(x(0), x(1), x(2));
+
+		//// Decompose R into 3 Euler angles
+		//R = this->getR_V();
+		//theta_x = atan2(R(2, 1), R(2, 2));
+		//theta_y = atan2(-R(2, 0), sqrt(pow(R(2, 1), 2) + pow(R(2, 2), 2)));
+		//theta_z = atan2(R(1, 0), R(0, 0));
+		//MV->rotate(theta_z, 0.0f, 0.0f, 1.0f);
+		//MV->rotate(theta_y, 0.0f, 1.0f, 0.0f);
+		//MV->rotate(theta_x, 1.0f, 0.0f, 0.0f);
+		//MV->scale(this->radius_V);
+		//glUniformMatrix4fv(prog->getUniform("MV"), 1, GL_FALSE, glm::value_ptr(MV->topMatrix()));
+		//cylinder_shape->draw(prog);
+		//MV->popMatrix();
+	}
+
+	// Draw P, S, U, V points
+	/*this->P->draw(MV, prog);
+	this->S->draw(MV, prog);
+	this->U->draw(MV, prog);
+	this->V->draw(MV, prog);*/
+
+	prog->unbind();
+
+	// Draw wrapping
+	prog2->bind();
+	glUniformMatrix4fv(prog2->getUniform("P"), 1, GL_FALSE, glm::value_ptr(P->topMatrix()));
+	glUniformMatrix4fv(prog2->getUniform("MV"), 1, GL_FALSE, glm::value_ptr(MV->topMatrix()));
+	MV->pushMatrix();
+	glUniformMatrix4fv(prog->getUniform("MV"), 1, GL_FALSE, glm::value_ptr(MV->topMatrix()));
+	glColor3f(0.0, 0.0, 0.0); // black
+	glLineWidth(3);
+	glBegin(GL_LINE_STRIP);
+	glVertex3f(this->point_S(0), this->point_S(1), this->point_S(2));
+
+	//todo
+	/*if (this->status == wrap) {
+		for (int i = 0; i < this->arc_points.cols(); i++) {
+			Vector3f p = this->arc_points.block<3, 1>(0, i).cast<float>();
+			glVertex3f(p(0), p(1), p(2));
+		}
+	}*/
+
+	glVertex3f(this->point_P(0), this->point_P(1), this->point_P(2));
+	glEnd();
+
+	// Draw z axis
+	//z_U->draw(MV, P, prog2);
+	//z_V->draw(MV, P, prog2);
+
+	MV->popMatrix();
+	prog2->unbind();
+}
+
+// get
+Vector3d WrapDoubleCylinder::getp_U() const {
+	return this->E_W_U.block<3, 1>(0, 3);
+}
+
+Matrix3d WrapDoubleCylinder::getR_U() const {
+	return this->E_W_U.block<3, 3>(0, 0);
+}
+
+Vector3d WrapDoubleCylinder::getp_V() const {
+	return this->E_W_V.block<3, 1>(0, 3);
+}
+
+Matrix3d WrapDoubleCylinder::getR_V() const {
+	return this->E_W_V.block<3, 3>(0, 0);
+}
+
+// set
+
+void WrapDoubleCylinder::setE_U(Matrix4d E) {
+	this->E_W_U = E;
+}
+
+void WrapDoubleCylinder::setE_V(Matrix4d E) {
+	this->E_W_V = E;
+}
+
+void WrapDoubleCylinder::setP(shared_ptr<Particle> _P) {
+	this->P = _P;
+	this->point_P = P->x;
+}
+
+void WrapDoubleCylinder::setS(shared_ptr<Particle> _S) {
+	this->S = _S;
+	this->point_S = S->x;
+}
+
+void WrapDoubleCylinder::setU(shared_ptr<Particle> _U) {
+	this->U = _U;
+	this->point_U = U->x;
+}
+
+void WrapDoubleCylinder::setV(shared_ptr<Particle> _V) {
+	this->V = _V;
+	this->point_V = V->x;
+}
+
+void WrapDoubleCylinder::setZ_U(shared_ptr<Vector> _z_U) {
+	this->z_U = _z_U;
+	this->vec_z_U = this->z_U->dir;
+}
+
+void WrapDoubleCylinder::setZ_V(shared_ptr<Vector> _z_V) {
+	this->z_V = _z_V;
+	this->vec_z_V = this->z_V->dir;
+}
+
+void WrapDoubleCylinder::setNumPoints(int _num_points) {
+	this->num_points = _num_points;
+}
+
+Matrix4d WrapDoubleCylinder::getE_U() const {
+	return this->E_W_U;
+}
+
+Matrix4d WrapDoubleCylinder::getE_V() const {
+	return this->E_W_V;
+}
+
+Matrix4d WrapDoubleCylinder::getE_P_U() const {
+	return this->E_P_U;
+}
+
+Matrix4d WrapDoubleCylinder::getE_P_V() const {
+	return this->E_P_V;
 }

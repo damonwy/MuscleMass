@@ -91,8 +91,6 @@ public:
 	Eigen::Matrix4d getE_P_0() const;
 
 	// set
-	void setp(Eigen::Vector3d p);
-	void setR(Eigen::Matrix3d R);
 	void setE(Eigen::Matrix4d E);
 	void setP(std::shared_ptr<Particle> _P);
 	void setS(std::shared_ptr<Particle> _S);

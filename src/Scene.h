@@ -19,6 +19,7 @@ class Solver;
 class Joint;
 class Vector;
 class WrapCylinder;
+class WrapDoubleCylinder;
 
 class Scene
 {
@@ -65,6 +66,7 @@ private:
 
 	std::vector< std::shared_ptr<Rigid> > boxes;
 	std::shared_ptr<Solver> solver;
+	std::vector< std::shared_ptr<WrapDoubleCylinder> > wrap_doublecylinders;
 
 	nlohmann::json js;
 };

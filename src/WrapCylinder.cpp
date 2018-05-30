@@ -179,8 +179,6 @@ void WrapCylinder::draw(shared_ptr<MatrixStack> MV, const shared_ptr<Program> pr
 	this->S->draw(MV, prog);
 	this->O->draw(MV, prog);
 
-
-
 	prog->unbind();
 
 	// Draw wrapping
@@ -204,8 +202,6 @@ void WrapCylinder::draw(shared_ptr<MatrixStack> MV, const shared_ptr<Program> pr
 	glVertex3f(this->point_P(0), this->point_P(1), this->point_P(2));
 	glEnd();
 
-	
-
 	// Draw z axis
 	Z->draw(MV, P, prog2);
 
@@ -224,13 +220,6 @@ Matrix3d WrapCylinder::getR() const {
 }
 
 // set
-void WrapCylinder::setp(Vector3d p) {
-	this->E_W_0.block<3, 1>(0, 3) = p;
-}
-
-void WrapCylinder::setR(Matrix3d R) {
-	this->E_W_0.block<3, 3>(0, 0) = R;
-}
 
 void WrapCylinder::setE(Matrix4d E) {
 	this->E_W_0 = E;
