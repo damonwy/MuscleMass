@@ -1,5 +1,7 @@
 #include <iostream>
+#include <fstream>
 
+#include <json.hpp>
 #include "Scene.h"
 #include "Particle.h"
 #include "Shape.h"
@@ -11,8 +13,11 @@
 #include "MatlabDebug.h"
 #include "Vector.h"
 
+
 using namespace std;
 using namespace Eigen;
+using json = nlohmann::json;
+
 
 Scene::Scene() :
 	t(0.0),
@@ -33,14 +38,16 @@ Scene::~Scene()
 }
 
 void Scene::load(const string &RESOURCE_DIR)
-{
+{	
+	//read a JSON file
+	ifstream i(RESOURCE_DIR + "input.json");
+	i >> js;
+	i.close();
+
 	// Units: meters, kilograms, seconds
-	h = 1e-2;
+	h = js["h"];
 	grav << 0.0, -9.8, 0.0;
-	bool isReduced = true;
-	double scale = 1.0;
-	double mass = 8.0;
-	Integrator time_integrator = SYMPLECTIC;
+	Integrator time_integrator = RKF45;
 
 	// Init boxes
 	boxShape = make_shared<Shape>();
@@ -51,22 +58,23 @@ void Scene::load(const string &RESOURCE_DIR)
 	R << 0, -1, 0,
 		1, 0, 0,
 		0, 0, 1;
-	Vector3d p = Vector3d(0.0, 0.0, 0.0);
+	Vector3d p;
+	p.setZero();
 	Vector3d dimension = Vector3d(1.0, 4.0, 1.0);
 
-	auto box0 = make_shared<Rigid>(boxShape, R, p, dimension, scale, mass, isReduced);
+	auto box0 = make_shared<Rigid>(boxShape, R, p, dimension, js["scale"], js["mass"], js["isReduced"]);
 	box0->setIndex(0);
 	boxes.push_back(box0);
 
 	p += Vector3d(4.0, 0.0, 0.0);
-	auto box1 = make_shared<Rigid>(boxShape, R, p, dimension, scale, mass, isReduced);
+	auto box1 = make_shared<Rigid>(boxShape, R, p, dimension, js["scale"], js["mass"], js["isReduced"]);
 	box1->setIndex(1);
 	box1->setParent(box0);
 	//box0->addChild(box1);
 	boxes.push_back(box1);
 
 	p += Vector3d(4.0, 0.0, 0.0);
-	auto box2 = make_shared<Rigid>(boxShape, R, p, dimension, scale, mass, isReduced);
+	auto box2 = make_shared<Rigid>(boxShape, R, p, dimension, js["scale"], js["mass"], js["isReduced"]);
 	box2->setIndex(2);
 	box2->setParent(box1);
 	//box1->addChild(box2);
@@ -74,7 +82,7 @@ void Scene::load(const string &RESOURCE_DIR)
 
 	R.setIdentity();
 	p.setZero();
-	/*auto box3 = make_shared<Rigid>(boxShape, R, p, dimension, scale, mass, isReduced);
+	/*auto box3 = make_shared<Rigid>(boxShape, R, p, dimension, js["scale"], js["mass"], js["isReduced"]);
 	box3->setIndex(3);
 	boxes.push_back(box3);*/
 
@@ -98,6 +106,7 @@ void Scene::load(const string &RESOURCE_DIR)
 	joint2->setTheta_0(0.0);
 	joint2->reset();
 
+	// Init ODE params
 	y.push_back(0.0);
 	y.push_back(0.0);
 	y.push_back(0.0);
@@ -127,16 +136,16 @@ void Scene::load(const string &RESOURCE_DIR)
 	wc_s->update(box2->getE());
 	box2->addPoint(wc_s);
 
-	double rr = 0.5;
+	double cylinder_radius = js["cylinder_radius"];
 	auto wc_o = make_shared<Particle>(sphereShape);
 	points.push_back(wc_o);
-	wc_o->x0 << rr + box2->getDimension()(0), -0.5 * box2->getDimension()(1) + 1.0, 0.0;
+	wc_o->x0 << cylinder_radius + box2->getDimension()(0), -0.5 * box2->getDimension()(1) + 1.0, 0.0;
 	wc_o->r = 0.1;
 	wc_o->update(box2->getE());
 	box2->addPoint(wc_o);
 
 	auto wc_z = make_shared<Vector>();
-	wc_z->dir0 << 0.0, 0.0, -1.0;
+	wc_z->dir0 << 0.0, 0.0, 1.0;
 	wc_z->dir = wc_z->dir0;
 	wc_z->setP(wc_o);
 	wc_z->update(box2->getE());
@@ -145,23 +154,20 @@ void Scene::load(const string &RESOURCE_DIR)
 	cylinderShape = make_shared<Shape>();
 	cylinderShape->loadMesh(RESOURCE_DIR + "cylinder2.obj");
 	
-	Vector3d P, S, O, Z;
-	
-	P << 1.0, 1.0, 1.0;
-	S << -1.0, -1.0, -1.0;
-	O << rr + box2->getDimension()(0), -0.5 * box2->getDimension()(1) + 1.0, 0.0;
-	Z << 0.0, 0.0, 1.0;
-	//R.setIdentity();
+	Vector3d O = Vector3d(cylinder_radius + box2->getDimension()(0), -0.5 * box2->getDimension()(1) + 1.0, 0.0);
+	cout << box2->getDimension()(0) << endl;
+
+
 	R << 1.0, 0.0, 0.0,
 		0.0, 0.0, 1.0,
 		0.0, -1.0, 0.0;
+
 	Matrix4d Ewrap;
 	Ewrap.setIdentity();
 	Ewrap.block<3, 3>(0, 0) = R;
 	Ewrap.block<3, 1>(0, 3) = O;
-	int num_points = 20;
 
-	auto wrap_cylinder0 = make_shared<WrapCylinder>(cylinderShape, O, R, rr, num_points);
+	auto wrap_cylinder0 = make_shared<WrapCylinder>(cylinderShape, O, R, cylinder_radius, js["num_points_on_arc"]);
 
 	wrap_cylinders.push_back(wrap_cylinder0);
 	wrap_cylinder0->setE(box2->getE() * Ewrap);
@@ -170,8 +176,9 @@ void Scene::load(const string &RESOURCE_DIR)
 	wrap_cylinder0->setO(wc_o);
 	wrap_cylinder0->setZ(wc_z);
 	box2->addCylinder(wrap_cylinder0);
+
 	// Init solver	
-	solver = make_shared<Solver>(boxes, isReduced, time_integrator);
+	solver = make_shared<Solver>(boxes, js["isReduced"], time_integrator);
 }
 
 void Scene::init()
@@ -264,14 +271,12 @@ void Scene::step()
 		}
 	}
 
-	for (int i = 0; i < (int)wrap_cylinders.size(); i++) {
-		wrap_cylinders[i]->step(h);
-	}	
-
 	t += h;
 	step_i += 1;
 	computeEnergy();
-	saveData(10000);
+
+	int plot_steps = js["plot_steps"];
+	saveData(plot_steps);
 }
 
 void Scene::saveData(int num_steps) {
@@ -316,18 +321,7 @@ void Scene::computeEnergy() {
 void Scene::draw(shared_ptr<MatrixStack> MV, const shared_ptr<Program> prog, const shared_ptr<Program> prog2, shared_ptr<MatrixStack> P) const
 {
 	for (int i = 0; i < (int)boxes.size(); ++i) {
-		boxes[i]->draw(MV, prog);
+		boxes[i]->draw(MV, prog, prog2, P);
 		
 	}
-
-	for (int i = 0; i < (int)points.size(); ++i) {
-		points[i]->draw(MV, prog);
-	}
-
-	for (int i = 0; i < (int)wrap_cylinders.size(); ++i) {
-		wrap_cylinders[i]->draw(MV, prog, prog2, P);
-	}
-
-	
-
 }

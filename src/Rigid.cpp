@@ -113,7 +113,7 @@ void Rigid::step(double h) {
 	for (int i = 0; i < (int)cylinders.size(); i++) {
 		Matrix4d E = this->E_W_0 * cylinders[i]->getE_P_0();
 		cylinders[i]->setE(E);
-		
+		cylinders[i]->step();
 	}
 	
 	// Points Update
@@ -122,7 +122,7 @@ void Rigid::step(double h) {
 	}
 }
 
-void Rigid::draw(shared_ptr<MatrixStack> MV, const shared_ptr<Program> prog) const
+void Rigid::draw(shared_ptr<MatrixStack> MV, const shared_ptr<Program> prog, const shared_ptr<Program> prog2, shared_ptr<MatrixStack> P) const
 {
 	if (box) {
 		MV->pushMatrix();
@@ -142,6 +142,11 @@ void Rigid::draw(shared_ptr<MatrixStack> MV, const shared_ptr<Program> prog) con
 		glUniformMatrix4fv(prog->getUniform("MV"), 1, GL_FALSE, glm::value_ptr(MV->topMatrix()));
 		box->draw(prog);
 		MV->popMatrix();
+		for (int i = 0; i < (int)cylinders.size(); i++) {
+			cylinders[i]->draw(MV, prog, prog2, P);
+		}
+
+		
 	}
 }
 
@@ -367,7 +372,18 @@ void Rigid::setJointAngle(double _theta, bool isDrawing) {
 			this->E_W_0_temp = E_W_C;
 			if (isDrawing) {
 				this->E_W_0 = E_W_0_temp;
-				
+
+				// Cylinders Update
+				for (int i = 0; i < (int)cylinders.size(); i++) {
+					Matrix4d E = this->E_W_0 * cylinders[i]->getE_P_0();
+					cylinders[i]->setE(E);
+					cylinders[i]->step();
+				}
+
+				// Points Update
+				for (int i = 0; i < (int)points.size(); i++) {
+					points[i]->update(this->E_W_0);
+				}
 			}
 		}
 	}
@@ -377,6 +393,8 @@ void Rigid::setJointAngle(double _theta, bool isDrawing) {
 		Matrix4d E_C_J = getEtemp().inverse() * parent->getEtemp() * joint->getE_P_J();
 		this->joint->setE_C_J(E_C_J);
 	}
+
+
 
 }
 

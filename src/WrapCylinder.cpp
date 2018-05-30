@@ -137,16 +137,22 @@ void WrapCylinder::reset() {
 
 }
 
-void WrapCylinder::step(double h) {
+void WrapCylinder::step() {
 	point_P = P->x;
 	point_O = O->x;
 	point_S = S->x;
 	vec_z = Z->dir;
-
 	compute();
+	double theta_s, theta_e;
+	Matrix3d M;
+	if (this->status == wrap) {
+		this->arc_points = getPoints(num_points, theta_s, theta_e, M);
+	}
 }
 
 void WrapCylinder::draw(shared_ptr<MatrixStack> MV, const shared_ptr<Program> prog, const shared_ptr<Program> prog2, shared_ptr<MatrixStack> P) const {
+
+	// Draw cylinder
 	if (cylinder_shape) {
 		glUniform3fv(prog->getUniform("kdFront"), 1, Vector3f(1.0, 0.0, 0.0).data());
 		glUniform3fv(prog->getUniform("kdBack"), 1, Vector3f(1.0, 1.0, 0.0).data());
@@ -167,9 +173,17 @@ void WrapCylinder::draw(shared_ptr<MatrixStack> MV, const shared_ptr<Program> pr
 		cylinder_shape->draw(prog);
 		MV->popMatrix();
 	}
+	
+	// Draw P, S, O points
+	this->P->draw(MV, prog);
+	this->S->draw(MV, prog);
+	this->O->draw(MV, prog);
+
+
 
 	prog->unbind();
 
+	// Draw wrapping
 	prog2->bind();
 	glUniformMatrix4fv(prog2->getUniform("P"), 1, GL_FALSE, glm::value_ptr(P->topMatrix()));
 	glUniformMatrix4fv(prog2->getUniform("MV"), 1, GL_FALSE, glm::value_ptr(MV->topMatrix()));
@@ -180,21 +194,24 @@ void WrapCylinder::draw(shared_ptr<MatrixStack> MV, const shared_ptr<Program> pr
 	glBegin(GL_LINE_STRIP);
 	glVertex3f(this->point_S(0), this->point_S(1), this->point_S(2));
 
-	if (getStatus() == wrap) {
-		double theta_s, theta_e;
-		Matrix3d M;
-		MatrixXd points = getPoints(num_points, theta_s, theta_e, M);
-		//cout << points << endl;
-		for (int i = 0; i < points.cols(); i++) {
-			Vector3f p = points.block<3, 1>(0, i).cast<float>();
+	if (this->status == wrap) {	
+		for (int i = 0; i < this->arc_points.cols(); i++) {
+			Vector3f p = this->arc_points.block<3, 1>(0, i).cast<float>();
 			glVertex3f(p(0), p(1), p(2));
 		}
-
 	}
+
 	glVertex3f(this->point_P(0), this->point_P(1), this->point_P(2));
 	glEnd();
+
+	
+
+	// Draw z axis
+	Z->draw(MV, P, prog2);
+
 	MV->popMatrix();
 	prog2->unbind();
+
 }
 
 // get

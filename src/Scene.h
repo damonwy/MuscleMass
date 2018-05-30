@@ -8,6 +8,7 @@
 
 #define EIGEN_DONT_ALIGN_STATICALLY
 #include <Eigen/Dense>
+#include <json.hpp>
 
 class Particle;
 class MatrixStack;
@@ -66,6 +67,8 @@ private:
 	std::shared_ptr<Solver> solver;
 	std::vector< std::shared_ptr<WrapCylinder> > wrap_cylinders;
 	std::vector< std::shared_ptr<Particle> > points;
+
+	nlohmann::json js;
 };
 
 #endif // MUSCLEMASS_SRC_SCENE_H_

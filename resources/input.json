@@ -1,0 +1,9 @@
+{
+	"h":1e-2,
+	"mass": 8.0,
+	"scale": 1.0, 
+	"isReduced": true,
+	"num_points_on_arc": 20,
+	"cylinder_radius": 0.5,
+	"plot_steps": 10000
+}

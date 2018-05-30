@@ -27,13 +27,15 @@ class WrapCylinder : public WrapObst
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 private:
 	Eigen::Vector3d vec_z;      // Cylinder Positive z axis
-	Eigen::Matrix4d E_W_0;		// Where current transform is wrt world
-	Eigen::Matrix4d E_P_0;		// Where the local frame is wrt parent
+	Eigen::Matrix4d E_W_0;		// Where current transform is wrt world(updated)
+	Eigen::Matrix4d E_P_0;		// Where the local frame is wrt parent(fixed)
+	Eigen::MatrixXd arc_points; // each col stores the position of a point in that arc
+
 	std::shared_ptr<Rigid> parent;
 	std::shared_ptr<Particle> P;
-	std::shared_ptr<Particle> S;
-	std::shared_ptr<Particle> O;
-	std::shared_ptr<Vector> Z;
+	std::shared_ptr<Particle> S;	
+	std::shared_ptr<Particle> O;	// the origin 
+	std::shared_ptr<Vector> Z;		// the Z axis of the cylinder(direction matters)
 	const std::shared_ptr<Shape> cylinder_shape;
 	int num_points;
 
@@ -60,16 +62,16 @@ public:
 		const int _num_points)
 		: WrapObst(), cylinder_shape(s)
 	{		
-		//WrapObst(_P->x, _S->x, _O->x, _r),	
-
 		this->num_points = _num_points;
-		E_P_0.setIdentity();
+		this->E_P_0.setIdentity();
 		this->E_P_0.block<3, 3>(0, 0) = R;
 		this->E_P_0.block<3, 1>(0, 3) = p;
 		this->E_W_0 = E_P_0;
 		
 		this->type = cylinder;
 		this->r = _r;
+		this->radius = this->r;
+		this->arc_points.resize(3, this->num_points + 1);
 	}
 
 	using WrapObst::compute;
@@ -79,7 +81,7 @@ public:
 	Eigen::MatrixXd getPoints(int num_points, double &theta_s, double &theta_e, Eigen::Matrix3d &_M) const;
 
 	void reset();
-	void step(double h);
+	void step();
 	void draw(std::shared_ptr<MatrixStack> MV, const std::shared_ptr<Program> prog, const std::shared_ptr<Program> prog2, std::shared_ptr<MatrixStack> P) const;
 
 	// get
