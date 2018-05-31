@@ -152,6 +152,7 @@ void WrapCylinder::step() {
 
 void WrapCylinder::draw(shared_ptr<MatrixStack> MV, const shared_ptr<Program> prog, const shared_ptr<Program> prog2, shared_ptr<MatrixStack> P) const {
 
+	prog->bind();
 	// Draw cylinder
 	if (cylinder_shape) {
 		glUniform3fv(prog->getUniform("kdFront"), 1, Vector3f(1.0, 0.0, 0.0).data());

@@ -18,6 +18,7 @@ class Rigid;
 class Solver;
 class Joint;
 class Vector;
+class WrapSphere;
 class WrapCylinder;
 class WrapDoubleCylinder;
 

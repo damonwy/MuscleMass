@@ -13,6 +13,7 @@ class Shape;
 class Program;
 class MatrixStack;
 class Joint;
+class WrapSphere;
 class WrapCylinder;
 class Particle;
 class WrapDoubleCylinder;
@@ -53,6 +54,7 @@ public:
 	void addChild(std::shared_ptr<Rigid> _child);
 	void setJointAngle(double _theta, bool isDrawing);
 	void setRotationAngle(double _theta);
+	void addSphere(std::shared_ptr<WrapSphere> _sphere);
 	void addCylinder(std::shared_ptr<WrapCylinder> _cylinder);
 	void addDoubleCylinder(std::shared_ptr<WrapDoubleCylinder> _double_cylinders);
 	void addPoint(std::shared_ptr<Particle> _point);
@@ -93,6 +95,7 @@ private:
 	const std::shared_ptr<Shape> box;
 	std::shared_ptr<Rigid> parent;
 	std::vector< std::shared_ptr<Rigid> > children;
+	std::vector< std::shared_ptr<WrapSphere> > spheres;
 	std::vector< std::shared_ptr<WrapCylinder> > cylinders;
 	std::vector< std::shared_ptr<WrapDoubleCylinder> > double_cylinders;
 

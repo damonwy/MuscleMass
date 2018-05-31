@@ -19,7 +19,6 @@ class Program;
 class MatrixStack;
 class Rigid;
 
-
 #include "WrapObst.h"
 
 class WrapCylinder : public WrapObst

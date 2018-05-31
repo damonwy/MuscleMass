@@ -7,13 +7,13 @@
 #include "Shape.h"
 #include "Program.h"
 #include "Rigid.h"
+#include "WrapSphere.h"
 #include "WrapCylinder.h"
 #include "WrapDoubleCylinder.h"
 #include "Solver.h"
 #include "Joint.h"
 #include "MatlabDebug.h"
 #include "Vector.h"
-
 
 using namespace std;
 using namespace Eigen;
@@ -220,6 +220,34 @@ void Scene::load(const string &RESOURCE_DIR)
 	box2->addDoubleCylinder(wrap_doublecylinder); // Only add double cylinder to the latest updated rigid body, so that all the positions are updated
 	box2->setCylinderStatus(js["isCylinder"]);
 	box2->setDoubleCylinderStatus(js["isDoubleCylinder"]);
+
+	auto ws_p = make_shared<Particle>(sphereShape);
+	ws_p->x0 = Vector3d(1.0, 2.0, 0.0);
+	ws_p->r = 0.1;
+	ws_p->update(box1->getE());
+	box1->addPoint(ws_p);
+
+	auto ws_s = make_shared<Particle>(sphereShape);
+	ws_s->x0 = Vector3d(1.0, -2.0, 0.0);
+	ws_s->r = 0.1;
+	ws_s->update(box2->getE());
+	box2->addPoint(ws_s);
+
+	auto ws_o = make_shared<Particle>(sphereShape);
+	ws_o->x0 = Vector3d(cylinder_radius + box2->getDimension()(0), -0.5 * box2->getDimension()(1) + 1.0, 0.0);
+	ws_o->r = 0.1;
+	ws_o->update(box2->getE());
+	box2->addPoint(ws_o);
+
+	// Init WrapSphere
+	auto wrap_sphere = make_shared<WrapSphere>(cylinder_radius, num_points_on_arc);
+
+	wrap_sphere->setP(ws_p);
+	wrap_sphere->setS(ws_s);
+	wrap_sphere->setO(ws_o);
+	
+	wrap_sphere->setParent(box2);
+	box2->addSphere(wrap_sphere);
 
 	// Init solver	
 	solver = make_shared<Solver>(boxes, js["isReduced"], time_integrator);

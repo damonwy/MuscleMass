@@ -13,6 +13,7 @@
 #include "Shape.h"
 #include "Program.h"
 #include "MatrixStack.h"
+#include "WrapSphere.h"
 #include "WrapCylinder.h"
 #include "WrapDoubleCylinder.h"
 #include "Particle.h"
@@ -110,6 +111,13 @@ void Rigid::step(double h) {
 		this->joint->setE_C_J(E_C_J);
 	}
 
+	// Spheres Update
+	if (isSphere) {
+		for (int i = 0; i < (int)spheres.size(); i++) {
+			spheres[i]->step();
+		}
+	}
+
 	// Cylinders Update
 	if (isCylinder) {
 		for (int i = 0; i < (int)cylinders.size(); i++) {
@@ -141,7 +149,10 @@ void Rigid::step(double h) {
 
 void Rigid::draw(shared_ptr<MatrixStack> MV, const shared_ptr<Program> prog, const shared_ptr<Program> prog2, shared_ptr<MatrixStack> P) const
 {
+	prog->bind();
 	if (box) {
+		glUniform3fv(prog->getUniform("kdFront"), 1, Vector3f(1.0, 0.0, 0.0).data());
+		glUniform3fv(prog->getUniform("kdBack"), 1, Vector3f(1.0, 1.0, 0.0).data());
 		MV->pushMatrix();
 		Vector3d x = getP();
 		MV->translate(x(0), x(1), x(2));
@@ -159,6 +170,14 @@ void Rigid::draw(shared_ptr<MatrixStack> MV, const shared_ptr<Program> prog, con
 		box->draw(prog);
 		MV->popMatrix();
 	}
+	prog->unbind();
+
+	if (isSphere) {
+		for (int i = 0; i < (int)spheres.size(); i++) {
+			spheres[i]->draw(MV, prog, prog2, P);
+		}
+	}
+
 
 	if (isCylinder) {
 		for (int i = 0; i < (int)cylinders.size(); i++) {
@@ -396,6 +415,13 @@ void Rigid::setJointAngle(double _theta, bool isDrawing) {
 			if (isDrawing) {
 				this->E_W_0 = E_W_0_temp;
 
+				// Spheres Update
+				if (isSphere) {
+					for (int i = 0; i < (int)spheres.size(); i++) {
+						spheres[i]->step();
+					}
+				}
+
 				// Cylinders Update
 				if (isCylinder) {
 					for (int i = 0; i < (int)cylinders.size(); i++) {
@@ -467,6 +493,9 @@ void Rigid::addPoint(shared_ptr<Particle> _point) {
 	this->points.push_back(_point);
 }
 
+void Rigid::addSphere(shared_ptr<WrapSphere> _sphere) {
+	this->spheres.push_back(_sphere);
+}
 
 Rigid::~Rigid()
 {

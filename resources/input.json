@@ -3,8 +3,9 @@
 	"mass": 8.0,
 	"scale": 1.0, 
 	"isReduced": true,
+	"isSphere":true,
 	"isCylinder":false,
-	"isDoubleCylinder":true,
+	"isDoubleCylinder":false,
 	"num_points_on_arc": 20,
 	"cylinder_radius": 0.5,
 	"plot_steps": 10000
