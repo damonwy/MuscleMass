@@ -216,6 +216,7 @@ void Scene::load(const string &RESOURCE_DIR)
 	box2->addDoubleCylinder(wrap_doublecylinder); // Only add double cylinder to the latest updated rigid body, so that all the positions are updated
 	box2->setCylinderStatus(js["isCylinder"]);
 	box2->setDoubleCylinderStatus(js["isDoubleCylinder"]);
+	box2->setSphereStatus(js["isSphere"]);
 
 	auto ws_p = make_shared<Particle>(sphereShape);
 	from_json(js["ws_p_x0"], ws_p->x0);
@@ -274,14 +275,20 @@ void Scene::reset()
 void Scene::step()
 {
 	if (solver->time_integrator == RKF45) {
+		MatrixXd J = solver->getJ_twist_thetadot();
+		//cout << J << endl;
+		MatrixXd JJ = J.block(0, solver->n - solver->num_joints, solver->m, solver->num_joints);
 
 		vector<double> tmp = solver->solve(&y[0], &yp[0], (int)2 * (boxes.size() - 1), t, t + h);
+		//vector<double> tmp = solver->solve(&y[0], &yp[0], (int)2 * (boxes.size() - 1), 0, 0 + h);
 
 		y.clear();
 
 		for (int i = 0; i < (int)2 * (boxes.size() - 1); i++) {
 			y.push_back(tmp[i]);
+			//cout << tmp[i] << endl;
 		}
+
 		VectorXd thetadot;
 		thetadot.resize(boxes.size() - 1);
 
@@ -289,16 +296,16 @@ void Scene::step()
 			thetadot(i) = y[boxes.size() - 1 + i];
 		}
 
+		
+
+
 		for (int i = 0; i < (int)boxes.size(); i++) {
 			auto box = boxes[i];
 			if (i != 0) {
 				// Update joint angles
-				box->setJointAngle(y[i-1], true);	
+				box->setJointAngle(y[i-1], true);
 			}
 		}
-
-		MatrixXd J = solver->getJ_twist_thetadot();
-		MatrixXd JJ = J.block(0, solver->n - solver->num_joints, solver->m, solver->num_joints);
 
 		VectorXd phi = JJ * thetadot;
 		for (int i = 0; i < (int)boxes.size(); i++) {
@@ -307,6 +314,9 @@ void Scene::step()
 				box->setTwist(phi.segment<6>(6 * i));
 			}
 		}
+		
+		this->phi = phi.segment<12>(6);
+
 		// solve_once
 
 		//if (step_i == 0) {
@@ -336,7 +346,14 @@ void Scene::step()
 		solver->step(h);
 		for (int i = 0; i < (int)boxes.size(); ++i) {
 			boxes[i]->step(h);
+
+			if (i != 0) {
+				this->phi.segment<6>(6 * (i - 1)) = boxes[i]->getTwist();
+				//cout << boxes[i]->getP()(1) << endl;
+			}
 		}
+		MatrixXd jj = solver->getJ_twist_thetadot();
+		///cout << jj << endl;
 	}
 
 	t += h;
@@ -352,25 +369,31 @@ void Scene::saveData(int num_steps) {
 	Kvec.push_back(K);
 	Vvec.push_back(V);
 	Tvec.push_back(step_i);
+	Twist_vec.push_back(phi);
 
 	if (step_i == num_steps) {
 		cout << "finished" << endl;
 		VectorXd Kv;
 		VectorXd Vv;
 		VectorXd Tv;
+		VectorXd Twistv;
+
 		Kv.resize(Kvec.size());
 		Vv.resize(Vvec.size());
 		Tv.resize(Tvec.size());
+		Twistv.resize(12 * Twist_vec.size());
 
 		for (int i = 0; i < Kvec.size(); i++) {
 			Kv(i) = Kvec[i];
 			Vv(i) = Vvec[i];
 			Tv(i) = Tvec[i];
+			Twistv.segment<12>(12 * i) = Twist_vec[i];
 		}
 
 		vec_to_file(Kv, "K");
 		vec_to_file(Vv, "V");
 		vec_to_file(Tv, "T");
+		vec_to_file(Twistv, "Twistv");
 	}
 }
 
@@ -380,8 +403,11 @@ void Scene::computeEnergy() {
 
 	for (int i = 0; i < (int)boxes.size(); ++i) {
 		double vi = boxes[i]->m * grav.transpose() * boxes[i]->getP();
+
+		//cout << "pos: " << boxes[i]->getP() << endl;
 		V += vi;
 		double ki = 0.5 * boxes[i]->getTwist().transpose() * boxes[i]->getMassMatrix() * boxes[i]->getTwist();
+		//cout << "twist: " << boxes[i]->getTwist() << endl;
 		K += ki;
 	}
 }

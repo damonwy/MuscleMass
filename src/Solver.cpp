@@ -66,6 +66,7 @@ void Solver::dynamics(double t, double y[], double yp[])
 	theta.resize(num_joints);
 	thetadot.resize(num_joints);
 
+
 	for (int i = 0; i < num_joints; i++) {
 		theta(i) = y[i];
 		thetadot(i) = y[num_joints + i];
@@ -112,6 +113,11 @@ void Solver::dynamics(double t, double y[], double yp[])
 		// TODO or never
 
 	}
+
+	/*for (int i = 0; i < num_joints; i++) {
+		cout << i << ":" << y[i] << "  " << yp[i] << endl;
+	}*/
+
 	return;
 }
 
@@ -263,6 +269,8 @@ void Solver::step(double h) {
 		}
 	}
 	else {
+		// Maximal Coordinate
+
 		int j = 0;
 		for (int i = 0; i < (int)boxes.size(); i++) {
 			auto box = boxes[i];

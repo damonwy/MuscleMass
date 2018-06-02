@@ -22,6 +22,8 @@ class WrapSphere;
 class WrapCylinder;
 class WrapDoubleCylinder;
 
+typedef Eigen::Matrix<double, 12, 1> Vector12d;
+
 class Scene
 {
 public:
@@ -53,9 +55,13 @@ private:
 
 	double V; // potential energy
 	double K; // kinetic energy
+	//double y_t;
+	Vector12d phi; // twist
 	std::vector < double > Kvec;
 	std::vector < double > Vvec;
 	std::vector < double > Tvec;
+	//std::vector < double > y_t_vec;
+	std::vector < Vector12d > Twist_vec;
 
 	std::vector<double> y;
 	std::vector<double> yp;

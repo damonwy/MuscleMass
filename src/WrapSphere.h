@@ -70,6 +70,7 @@ public:
 	void setS(std::shared_ptr<Particle> _S);
 	void setO(std::shared_ptr<Particle> _O);
 	void setParent(std::shared_ptr<Rigid> _parent);
+
 };
 
 #endif
