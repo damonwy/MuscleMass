@@ -19,7 +19,8 @@
 using namespace std;
 using namespace Eigen;
 using json = nlohmann::json;
-
+typedef Eigen::Matrix<double, 6, 1> Vector6d;
+#include <unsupported/Eigen/MatrixFunctions> // TODO: avoid using this later, write a func instead
 
 Scene::Scene() :
 	t(0.0),
@@ -28,11 +29,11 @@ Scene::Scene() :
 	grav(0.0, 0.0, 0.0),
 	t_start(0.0),
 	t_stop(100.0),
-	n_step(10),
+	n_step(10000),
 	K(0.0),
 	V(0.0)
 {
-	theta_list.resize(n_step);
+	theta_list.resize(n_step * 2);
 }
 
 Scene::~Scene()
@@ -111,17 +112,43 @@ void Scene::load(const string &RESOURCE_DIR)
 	joint2->reset();
 
 	// Init ODE params
-	y.push_back(0.0);
-	y.push_back(0.0);
-	y.push_back(0.0);
-	y.push_back(0.0);
-	y.resize(2 * (boxes.size() - 1));
+	if (js["isReduced"]) {
+		y.push_back(0.0);
+		y.push_back(0.0);
+		y.push_back(0.0);
+		y.push_back(0.0);
+		y.resize(2 * (boxes.size() - 1));
 
-	yp.push_back(0.0);
-	yp.push_back(0.0);
-	yp.push_back(0.0);
-	yp.push_back(0.0);
-	yp.resize(2 * (boxes.size() - 1));
+		yp.push_back(0.0);
+		yp.push_back(0.0);
+		yp.push_back(0.0);
+		yp.push_back(0.0);
+		yp.resize(2 * (boxes.size() - 1));
+	}
+	else {
+		Matrix4d E1 = box1->getE();
+		Matrix4d E2 = box2->getE();
+		Matrix4d EE1 = E1.log();
+		VectorXd e1 = Rigid::unbracket6(EE1);
+		VectorXd e2 = Rigid::unbracket6(E2.log());
+		for (int i = 0; i < 6; i++) {
+			y.push_back(e1(i));
+			yp.push_back(0.0);
+		}
+		for (int i = 0; i < 6; i++) {
+			y.push_back(e2(i));
+			yp.push_back(0.0);
+		}
+		for (int i = 0; i < 12; i++) {
+			y.push_back(0.0);
+			yp.push_back(0.0);
+		}
+
+		y.resize(12 * (boxes.size() - 1));
+		yp.resize(12 * (boxes.size() - 1));
+
+	}
+	
 
 	// Init Particles
 	sphereShape = make_shared<Shape>();
@@ -275,81 +302,127 @@ void Scene::reset()
 void Scene::step()
 {
 	if (solver->time_integrator == RKF45) {
-		MatrixXd J = solver->getJ_twist_thetadot();
-		//cout << J << endl;
-		MatrixXd JJ = J.block(0, solver->n - solver->num_joints, solver->m, solver->num_joints);
+		if (js["isReduced"]) {
+			MatrixXd J = solver->getJ_twist_thetadot();
+			//cout << J << endl;
+			MatrixXd JJ = J.block(0, solver->n - solver->num_joints, solver->m, solver->num_joints);
 
-		vector<double> tmp = solver->solve(&y[0], &yp[0], (int)2 * (boxes.size() - 1), t, t + h);
-		//vector<double> tmp = solver->solve(&y[0], &yp[0], (int)2 * (boxes.size() - 1), 0, 0 + h);
+			vector<double> tmp = solver->solve(&y[0], &yp[0], (int)2 * (boxes.size() - 1), t, t + h);
+			///vector<double> tmp = solver->solve(&y[0], &yp[0], (int)2 * (boxes.size() - 1), 0, t);
 
-		y.clear();
+			y.clear();
 
-		for (int i = 0; i < (int)2 * (boxes.size() - 1); i++) {
-			y.push_back(tmp[i]);
-			//cout << tmp[i] << endl;
-		}
-
-		VectorXd thetadot;
-		thetadot.resize(boxes.size() - 1);
-
-		for (int i = 0; i < boxes.size() - 1; i++){
-			thetadot(i) = y[boxes.size() - 1 + i];
-		}
-
-		
-
-
-		for (int i = 0; i < (int)boxes.size(); i++) {
-			auto box = boxes[i];
-			if (i != 0) {
-				// Update joint angles
-				box->setJointAngle(y[i-1], true);
+			for (int i = 0; i < (int)2 * (boxes.size() - 1); i++) {
+				y.push_back(tmp[i]);
+				//cout << tmp[i] << endl;
 			}
-		}
 
-		VectorXd phi = JJ * thetadot;
-		for (int i = 0; i < (int)boxes.size(); i++) {
-			auto box = boxes[i];
-			if (i != 0) {
-				box->setTwist(phi.segment<6>(6 * i));
+			VectorXd thetadot;
+			thetadot.resize(boxes.size() - 1);
+
+			for (int i = 0; i < boxes.size() - 1; i++) {
+				thetadot(i) = y[boxes.size() - 1 + i];
+				//cout << thetadot(i) << endl;
 			}
+
+			for (int i = 0; i < (int)boxes.size(); i++) {
+				auto box = boxes[i];
+				if (i != 0) {
+					// Update joint angles
+					box->setJointAngle(y[i - 1], true);
+					//cout << box->getP()(1) << endl;
+				}
+			}
+
+			VectorXd phi = JJ * thetadot;
+			for (int i = 0; i < (int)boxes.size(); i++) {
+				auto box = boxes[i];
+				if (i != 0) {
+					box->setTwist(phi.segment<6>(6 * i));
+				}
+			}
+
+			this->phi = phi.segment<12>(6);
+
+			// solve_once
+
+			//if (step_i == 0) {
+			//	double y[4] = { 0.0, 0.0, 0.0, 0.0 };
+			//	double yp[4];
+			//	theta_list = solver->solve_once(y, yp, 4, t_start, t_stop, n_step);
+			//	for (int i = 0; i < (int)boxes.size(); i++) {
+			//		auto box = boxes[i];
+			//		if (i != 0) {
+			//			// Update joint angles
+			//			box->setJointAngle(theta_list(2 * step_i + i - 1), true);
+			//			cout << theta_list(2 * step_i + i - 1) << endl;
+			//		}
+			//	}
+			//}
+			//else {
+			//	for (int i = 0; i < (int)boxes.size(); i++) {
+			//		auto box = boxes[i];
+			//		if (i != 0) {
+			//		// Update joint angles
+			//		box->setJointAngle(theta_list(2 * step_i + i - 1), true);	
+			//		cout << theta_list(step_i) << endl;
+			//		}
+			//	}
+			//}
+		}
+		else {
+			// Maximal Coordinate
+			vector<double> tmp = solver->solve(&y[0], &yp[0], (int)12 * (boxes.size() - 1), t, t + h);
+			y.clear();
+
+			for (int i = 0; i < (int)12 * (boxes.size() - 1); i++) {
+				y.push_back(tmp[i]);
+				//cout << tmp[i] << endl;
+			}
+
+			Vector6d e1, e2, phi1, phi2;
+			for (int i = 0; i < 6; i++) {
+				e1(i) = y[i];
+			}
+			for (int i = 6; i < 12; i++) {
+				e2(i-6) = y[i];
+			}
+			for (int i = 12; i < 18; i++) {
+				phi1(i - 12) = y[i];
+			}
+			for (int i = 18; i < 24; i++) {
+				phi2(i - 18) = y[i];
+			}
+
+			// Update E
+			MatrixXd E1 = Rigid::bracket6(e1).exp();
+			MatrixXd E2 = Rigid::bracket6(e2).exp();
+
+			boxes[1]->setE(E1);
+			boxes[2]->setE(E2);
+
+			// Update twists
+			boxes[1]->setTwist(phi1);
+			boxes[2]->setTwist(phi2);
+			/*for (int i = 0; i < (int)boxes.size(); i++) {
+				auto box = boxes[i];
+				if (i != 0) {
+					box->setTwist(phi.segment<6>(6 * i));
+				}
+			}*/
+
 		}
 		
-		this->phi = phi.segment<12>(6);
-
-		// solve_once
-
-		//if (step_i == 0) {
-		//	double y[2] = { 0.0, 0.0 };
-		//	double yp[2];
-		//	theta_list = solver->solve_once(y, yp, 2, t_start, t_stop, n_step);
-		//	for (int i = 0; i < (int)boxes.size(); i++) {
-		//		auto box = boxes[i];
-		//		if (i != 0) {
-		//			// Update joint angles
-		//			box->setJointAngle(theta_list(step_i), true);
-		//		}
-		//	}
-		//}
-		//else {
-		//	for (int i = 0; i < (int)boxes.size(); i++) {
-		//		auto box = boxes[i];
-		//		if (i != 0) {
-		//		// Update joint angles
-		//		box->setJointAngle(theta_list(step_i), true);	
-		//		}
-		//	}
-		//}
-
 	}
 	else if (solver->time_integrator == SYMPLECTIC) {
 		solver->step(h);
 		for (int i = 0; i < (int)boxes.size(); ++i) {
 			boxes[i]->step(h);
-
+			
 			if (i != 0) {
 				this->phi.segment<6>(6 * (i - 1)) = boxes[i]->getTwist();
 				//cout << boxes[i]->getP()(1) << endl;
+
 			}
 		}
 		MatrixXd jj = solver->getJ_twist_thetadot();
@@ -410,6 +483,16 @@ void Scene::computeEnergy() {
 		//cout << "twist: " << boxes[i]->getTwist() << endl;
 		K += ki;
 	}
+	if (step_i == 1) {
+		V0 = V;
+		K0 = K;
+	}
+	//cout << "V" << V << endl;
+	//cout << "K" << K << endl;
+	//cout << V0 - V << endl;
+	//cout << K - K0 << endl;
+	//cout << V0 - V + K - K0 << endl;
+
 }
 
 void Scene::draw(shared_ptr<MatrixStack> MV, const shared_ptr<Program> prog, const shared_ptr<Program> prog2, shared_ptr<MatrixStack> P) const

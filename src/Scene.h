@@ -55,6 +55,9 @@ private:
 
 	double V; // potential energy
 	double K; // kinetic energy
+	double V0;
+	double K0;
+
 	//double y_t;
 	Vector12d phi; // twist
 	std::vector < double > Kvec;

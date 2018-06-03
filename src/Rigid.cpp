@@ -369,6 +369,14 @@ Vector3d Rigid::getDimension() const {
 }
 
 // set
+void Rigid::setEtemp(Matrix4d E) {
+	this->E_W_0_temp = E;
+}
+
+void Rigid::setE(Eigen::Matrix4d E) {
+	this->E_W_0 = E;
+}
+
 void Rigid::setP(Eigen::Vector3d p) {
 	this->E_W_0.block<3, 1>(0, 3) = p;
 }

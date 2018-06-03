@@ -14,6 +14,7 @@
 
 using namespace std;
 using namespace Eigen;
+#include <unsupported/Eigen/MatrixFunctions> // TODO: avoid using this later, write a func instead
 
 Solver::Solver(vector< shared_ptr<Rigid> > _boxes, bool _isReduced, Integrator _time_integrator):
 num_joints(_boxes.size() - 1)
@@ -61,48 +62,58 @@ void Solver::dynamics(double t, double y[], double yp[])
 //	Output, double YP[NEQN], the value of the derivative dY(1:NEQN)/dT: thetadot1, thetadot2, thetaddot1, thetaddot2..
 //
 {
-	// Unpack input y[]
-	VectorXd theta, thetadot;
-	theta.resize(num_joints);
-	thetadot.resize(num_joints);
-
-
-	for (int i = 0; i < num_joints; i++) {
-		theta(i) = y[i];
-		thetadot(i) = y[num_joints + i];
-		yp[i] = y[num_joints + i];
-	}
-
-	for (int i = 0; i < (int)boxes.size(); i++) {
-		auto box = boxes[i];
-		if (i != 0) {
-			box->setJointAngle(theta(i - 1), false);	
-		}
-	}
-
 	// Solve linear system
 	if (isReduced) {
+		// Unpack input y[]
+		VectorXd theta, thetadot;
+		theta.resize(num_joints);
+		thetadot.resize(num_joints);
+
+
+		for (int i = 0; i < num_joints; i++) {
+			theta(i) = y[i];
+			thetadot(i) = y[num_joints + i];
+			yp[i] = y[num_joints + i];
+		}
+
+		for (int i = 0; i < (int)boxes.size(); i++) {
+			auto box = boxes[i];
+			if (i != 0) {
+				box->setJointAngle(theta(i - 1), false);
+			}
+		}
+
 
 		J = getJ_twist_thetadot();
+		//cout << J << endl;
 
 		MatrixXd JJ = J.block(0, n - num_joints, m, num_joints);
+		//cout << JJ << endl;
+
 		A = JJ.transpose() * M * JJ;
+
+		//cout << A << endl;
 
 		x.setZero();
 		x.segment(6, num_joints) = thetadot;
 		
 		VectorXd phi = J * x;
+		//cout << phi << endl;
+
 		for (int i = 0; i < (int)boxes.size(); i++) {
 			auto box = boxes[i];
 			box->setTwist(phi.segment<6>(6 * i));
 			box->computeTempForces();
 			f.segment<6>(6 * i) = box->getForce();
 		}
-	
+		
 		b = J.transpose() * f;
+		//cout <<"b"<< b << endl;
 
 		// Don't use the first rigid body because it has no constraint so it will affect the result of thetaddot
 		x.segment(6, num_joints) = A.ldlt().solve(b.segment(6, num_joints));	// thetaddot
+
+		//cout << "x" << x << endl;
 
 		for (int i = 0; i < num_joints; i++) {
 			yp[num_joints + i] = x(6 + i);		
@@ -110,8 +121,82 @@ void Solver::dynamics(double t, double y[], double yp[])
 	}
 	else {
 		// Maximal coordinate
-		// TODO or never
+		// Unpack input y[]
+		VectorXd Evec, phi;
+		Evec.resize(6 * (boxes.size() - 1));
+		phi.resize(6 * (boxes.size() - 1));
 
+		for (int i = 0; i < 6 * (boxes.size() - 1); i++) {
+			Evec(i) = y[i];
+			phi(i) = y[6 * (boxes.size() - 1) + i];
+			yp[i] = y[6 * (boxes.size() - 1) + i];
+		}
+		
+		for (int i = 0; i < (int)boxes.size(); i++) {
+			if (i != 0) {
+				auto box = boxes[i];
+				Matrix4d E = Rigid::bracket6(Evec.segment<6>(i-1)).exp();
+				box->setEtemp(E);
+				box->setTwist(phi.segment<6>(i-1));
+				box->computeTempForces();
+				Matrix4d E_C_J = box->getEtemp().inverse() * box->getParent()->getEtemp() * box->getJoint()->getE_P_J();
+				box->getJoint()->setE_C_J(E_C_J);
+			
+			}
+		}
+
+		// Solve for phidot
+		int j = 0;
+		for (int i = 0; i < (int)boxes.size(); i++) {
+			auto box = boxes[i];
+
+
+			A.block<6, 6>(6 * i, 6 * i) = box->getMassMatrix();
+			b.segment<6>(6 * i) =  box->getForce();
+
+			if (i == 0) {
+				Matrix6d I;
+				I.setIdentity();
+				A.block<6, 6>(6 * (int)boxes.size(), 0) = I;
+				A.block<6, 6>(0, 6 * (int)boxes.size()) = I;
+			}
+			else {
+				auto joint = box->getJoint();
+				Matrix6d Ad_J_P = Rigid::adjoint(joint->getE_P_J().inverse());
+				Matrix6d Ad_J_C = -Rigid::adjoint(joint->getE_C_J().inverse());
+				int id_P = box->getParent()->getIndex();
+				int id_C = box->getIndex();
+
+				Matrix5x6d G_J_P;
+				G_J_P.block<2, 6>(0, 0) = Ad_J_P.block<2, 6>(0, 0);
+				G_J_P.block<3, 6>(2, 0) = Ad_J_P.block<3, 6>(3, 0);
+
+				Matrix5x6d G_J_C;
+				G_J_C.block<2, 6>(0, 0) = Ad_J_C.block<2, 6>(0, 0);
+				G_J_C.block<3, 6>(2, 0) = Ad_J_C.block<3, 6>(3, 0);
+
+				A.block<5, 6>(6 * (int)boxes.size() + 6 + 5 * j, 6 * id_P) = G_J_P;
+				A.block<6, 5>(6 * id_P, 6 * (int)boxes.size() + 6 + 5 * j) = G_J_P.transpose();
+
+				A.block<5, 6>(6 * (int)boxes.size() + 6 + 5 * j, 6 * id_C) = G_J_C;
+				A.block<6, 5>(6 * id_C, 6 * (int)boxes.size() + 6 + 5 * j) = G_J_C.transpose();
+
+				j++;
+			}
+		}
+
+		x = A.ldlt().solve(b);
+
+		for (int i = 0; i < 6 * (boxes.size() - 1); i++) {
+			
+			yp[6 * (boxes.size() - 1) + i] = x(6 + i);
+		}
+
+		// Update boxes
+		/*for (int i = 0; i < (int)boxes.size(); i++) {
+			auto box = boxes[i];
+			box->setTwist(x.segment<6>(6 * i));
+		}*/
 	}
 
 	/*for (int i = 0; i < num_joints; i++) {
@@ -263,6 +348,7 @@ void Solver::step(double h) {
 			if (i != 0) {
 				// Update joint angles
 				box->setRotationAngle(h * x(5 + i)); 	
+				//cout << x(5 + i) << endl;
 				// Don't forget to update twists as well, we will use it to compute forces
 				box->setTwist(phi.segment<6>(6 * i));	
 			}

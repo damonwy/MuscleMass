@@ -51,6 +51,8 @@ public:
 	void setCylinderStatus(bool _isCylinder);
 	void setDoubleCylinderStatus(bool _isDoubleCylinder);
 	void setSphereStatus(bool _isSphere);
+	void setEtemp(Eigen::Matrix4d E);
+	void setE(Eigen::Matrix4d E);
 
 	void addChild(std::shared_ptr<Rigid> _child);
 	void setJointAngle(double _theta, bool isDrawing);
