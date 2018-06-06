@@ -135,9 +135,9 @@ void Solver::dynamics(double t, double y[], double yp[])
 		for (int i = 0; i < (int)boxes.size(); i++) {
 			if (i != 0) {
 				auto box = boxes[i];
-				Matrix4d E = Rigid::bracket6(Evec.segment<6>(i-1)).exp();
+				Matrix4d E = Rigid::bracket6(Evec.segment<6>(6 * (i-1))).exp();
 				box->setEtemp(E);
-				box->setTwist(phi.segment<6>(i-1));
+				box->setTwist(phi.segment<6>(6 * (i-1)));
 				box->computeTempForces();
 				Matrix4d E_C_J = box->getEtemp().inverse() * box->getParent()->getEtemp() * box->getJoint()->getE_P_J();
 				box->getJoint()->setE_C_J(E_C_J);
@@ -184,9 +184,15 @@ void Solver::dynamics(double t, double y[], double yp[])
 				j++;
 			}
 		}
+		//cout << "A" << endl<< A << endl;
+		mat_to_file(A, "A");
+		vec_to_file(b, "b");
 
 		x = A.ldlt().solve(b);
+		//cout << "b" << endl << b << endl;
 
+		//cout << "x" << endl << x << endl << endl;
+		vec_to_file(x, "x");
 		for (int i = 0; i < 6 * (boxes.size() - 1); i++) {
 			
 			yp[6 * (boxes.size() - 1) + i] = x(6 + i);
@@ -198,10 +204,6 @@ void Solver::dynamics(double t, double y[], double yp[])
 			box->setTwist(x.segment<6>(6 * i));
 		}*/
 	}
-
-	/*for (int i = 0; i < num_joints; i++) {
-		cout << i << ":" << y[i] << "  " << yp[i] << endl;
-	}*/
 
 	return;
 }

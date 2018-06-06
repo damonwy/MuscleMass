@@ -72,6 +72,7 @@ void Scene::load(const string &RESOURCE_DIR)
 	boxes.push_back(box0);
 
 	p += Vector3d(4.0, 0.0, 0.0);
+	
 	auto box1 = make_shared<Rigid>(boxShape, R, p, dimension, scale, mass, js["isReduced"]);
 	box1->setIndex(1);
 	box1->setParent(box0);
@@ -79,6 +80,9 @@ void Scene::load(const string &RESOURCE_DIR)
 	boxes.push_back(box1);
 
 	p += Vector3d(4.0, 0.0, 0.0);
+	p -= Vector3d(2.0, 2.0, 0.0);
+	//from_json(js["Rx"], R);
+	R.setIdentity();
 	auto box2 = make_shared<Rigid>(boxShape, R, p, dimension, scale, mass, js["isReduced"]);
 	box2->setIndex(2);
 	box2->setParent(box1);
@@ -306,7 +310,10 @@ void Scene::step()
 			MatrixXd J = solver->getJ_twist_thetadot();
 			//cout << J << endl;
 			MatrixXd JJ = J.block(0, solver->n - solver->num_joints, solver->m, solver->num_joints);
-
+			for (int i = 0; i < (int)2 * (boxes.size() - 1); i++) {
+				
+				cout << "yinput" << y[i] << endl;
+			}
 			vector<double> tmp = solver->solve(&y[0], &yp[0], (int)2 * (boxes.size() - 1), t, t + h);
 			///vector<double> tmp = solver->solve(&y[0], &yp[0], (int)2 * (boxes.size() - 1), 0, t);
 
@@ -314,7 +321,7 @@ void Scene::step()
 
 			for (int i = 0; i < (int)2 * (boxes.size() - 1); i++) {
 				y.push_back(tmp[i]);
-				//cout << tmp[i] << endl;
+				cout <<"youtput"<< tmp[i] << endl;
 			}
 
 			VectorXd thetadot;
@@ -342,7 +349,7 @@ void Scene::step()
 				}
 			}
 
-			this->phi = phi.segment<12>(6);
+			//this->phi = phi.segment<12>(6);
 
 			// solve_once
 
@@ -381,12 +388,8 @@ void Scene::step()
 			}
 
 			Vector6d e1, e2, phi1, phi2;
-			for (int i = 0; i < 6; i++) {
-				e1(i) = y[i];
-			}
-			for (int i = 6; i < 12; i++) {
-				e2(i-6) = y[i];
-			}
+			// Only need twist to update boxes
+			
 			for (int i = 12; i < 18; i++) {
 				phi1(i - 12) = y[i];
 			}
@@ -394,22 +397,25 @@ void Scene::step()
 				phi2(i - 18) = y[i];
 			}
 
-			// Update E
-			MatrixXd E1 = Rigid::bracket6(e1).exp();
-			MatrixXd E2 = Rigid::bracket6(e2).exp();
-
-			boxes[1]->setE(E1);
-			boxes[2]->setE(E2);
-
 			// Update twists
 			boxes[1]->setTwist(phi1);
 			boxes[2]->setTwist(phi2);
-			/*for (int i = 0; i < (int)boxes.size(); i++) {
-				auto box = boxes[i];
-				if (i != 0) {
-					box->setTwist(phi.segment<6>(6 * i));
-				}
-			}*/
+			for (int i = 0; i < (int)boxes.size(); i++) {
+				// Update E
+				boxes[i]->step(h);
+			}
+
+			Matrix4d E1 = boxes[1]->getE();
+			Matrix4d E2 = boxes[2]->getE();
+			e1 = Rigid::unbracket6(E1.log());
+			e2 = Rigid::unbracket6(E2.log());
+
+			for (int i = 0; i < 6; i++) {
+				y[i] = e1(i);
+				y[6 + i] = e2(i);
+			}
+
+			cout << "phi2:" << endl << phi2 << endl;
 
 		}
 		
@@ -477,7 +483,7 @@ void Scene::computeEnergy() {
 	for (int i = 0; i < (int)boxes.size(); ++i) {
 		double vi = boxes[i]->m * grav.transpose() * boxes[i]->getP();
 
-		//cout << "pos: " << boxes[i]->getP() << endl;
+		//cout << "pos: " << boxes[i]->getP()(1) << endl;
 		V += vi;
 		double ki = 0.5 * boxes[i]->getTwist().transpose() * boxes[i]->getMassMatrix() * boxes[i]->getTwist();
 		//cout << "twist: " << boxes[i]->getTwist() << endl;
