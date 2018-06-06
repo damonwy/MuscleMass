@@ -37,8 +37,8 @@ public:
 	void step(double h);
 	
 	void draw(std::shared_ptr<MatrixStack> MV, const std::shared_ptr<Program> prog, const std::shared_ptr<Program> prog2, std::shared_ptr<MatrixStack> P) const;
-	void computeForces();
-	void computeTempForces();
+	void computeForces();	  // Use current E
+	void computeTempForces(); // Use temporary E
 
 	// set
 
@@ -61,6 +61,10 @@ public:
 	void addCylinder(std::shared_ptr<WrapCylinder> _cylinder);
 	void addDoubleCylinder(std::shared_ptr<WrapDoubleCylinder> _double_cylinders);
 	void addPoint(std::shared_ptr<Particle> _point);
+	void updateCylinders();
+	void updateDoubleCylinders();
+	void updateSpheres();
+	void updatePoints();
 
 	// get
 	Eigen::Vector3d getP() const;
@@ -86,11 +90,10 @@ public:
 
 	double r; // radius
 	double m; // mass
-	bool isReduced; 
-	bool isCylinder;
+	bool isReduced;		// Use reduced coord or maximal coord
+	bool isCylinder;	// drawing?
 	bool isDoubleCylinder;
 	bool isSphere;
-	
 	
 	Eigen::Vector3d grav;	
 
@@ -104,8 +107,8 @@ private:
 
 	std::vector< std::shared_ptr<Particle> > points;
 	std::shared_ptr<Joint> joint;
-	Eigen::Matrix4d E_W_0; // Where current transform is wrt world
-	Eigen::Matrix4d E_W_0_0; // Where current transform is wrt world at the start
+	Eigen::Matrix4d E_W_0;		// Where current transform is wrt world
+	Eigen::Matrix4d E_W_0_0;	// Where current transform is wrt world at the start
 	Eigen::Matrix4d E_W_0_temp; // for computational purpose, not for drawing
 	Eigen::Vector3d dimension;
 	Matrix6d mass_mat;

@@ -110,15 +110,52 @@ void Rigid::step(double h) {
 		Matrix4d E_C_J = getE().inverse() * parent->getE() * joint->getE_P_J();
 		this->joint->setE_C_J(E_C_J);
 	}
+	
+	updateSpheres();
+	updateCylinders();
+	updateDoubleCylinders();
+	updatePoints();
+	
+}
 
-	// Spheres Update
-	if (isSphere) {
-		for (int i = 0; i < (int)spheres.size(); i++) {
-			spheres[i]->step();
+void Rigid::setJointAngle(double _theta, bool isDrawing) {
+	// Only used in reduced coord
+	this->joint->reset();
+	this->joint->setTheta(_theta);
+	if (isReduced) {
+		// Use reduced positions
+		if (i != 0) {
+			Matrix4d E_J_C = joint->getE_C_J().inverse();
+
+			double theta = joint->getTheta();
+
+			Matrix4d R;
+			R.setIdentity();
+			R.block<2, 2>(0, 0) << cos(theta), -sin(theta),
+				sin(theta), cos(theta);
+
+			Matrix4d E_P_J = joint->getE_P_J();
+			Matrix4d E_W_P = parent->getEtemp();
+			Matrix4d E_W_C = E_W_P * E_P_J * R * E_J_C;
+			this->E_W_0_temp = E_W_C;
+			if (isDrawing) {
+				this->E_W_0 = E_W_0_temp;
+				updateSpheres();
+				updateCylinders();
+				updateDoubleCylinders();
+				updatePoints();
+			}
 		}
 	}
 
-	// Cylinders Update
+	// Joint Update
+	if (i != 0) {
+		Matrix4d E_C_J = getEtemp().inverse() * parent->getEtemp() * joint->getE_P_J();
+		this->joint->setE_C_J(E_C_J);
+	}
+}
+
+void Rigid::updateCylinders() {
 	if (isCylinder) {
 		for (int i = 0; i < (int)cylinders.size(); i++) {
 			Matrix4d E = this->E_W_0 * cylinders[i]->getE_P_0();
@@ -126,22 +163,32 @@ void Rigid::step(double h) {
 			cylinders[i]->step();
 		}
 	}
+}
 
-	// Double Cylinders Update
+void Rigid::updateDoubleCylinders() {
 	if (isDoubleCylinder) {
 		for (int i = 0; i < (int)double_cylinders.size(); i++) {
 			// Update U
 			Matrix4d E = double_cylinders[i]->getParent_U()->getE() * double_cylinders[i]->getE_P_U();
 			double_cylinders[i]->setE_U(E);
 
-			//Update V
+			// Update V
 			E = double_cylinders[i]->getParent_V()->getE() * double_cylinders[i]->getE_P_V();
 			double_cylinders[i]->setE_V(E);
 			double_cylinders[i]->step();
 		}
 	}
+}
 
-	// Points Update
+void Rigid::updateSpheres() {
+	if (isSphere) {
+		for (int i = 0; i < (int)spheres.size(); i++) {
+			spheres[i]->step();
+		}
+	}
+}
+
+void Rigid::updatePoints() {
 	for (int i = 0; i < (int)points.size(); i++) {
 		points[i]->update(this->E_W_0);
 	}
@@ -310,6 +357,9 @@ void Rigid::computeForces() {
 }
 
 void Rigid::computeTempForces() {
+	
+	// Use E_W_0_temp computed from ODE input theta to get temporary force in that position 
+	// Make sure before using this func, twist is updated to the temporary one
 	Matrix6d twist_bracket;
 	twist_bracket.setZero();
 	twist_bracket.block<3, 3>(0, 0) = bracket3(twist.segment<3>(0));
@@ -401,73 +451,6 @@ void Rigid::setParent(shared_ptr<Rigid> _parent) {
 	this->parent = _parent;
 }
 
-void Rigid::setJointAngle(double _theta, bool isDrawing) {
-	this->joint->reset();
-	this->joint->setTheta(_theta);
-	if (isReduced) {
-		// Use reduced positions
-		if (i != 0) {
-			Matrix4d E_J_C = joint->getE_C_J().inverse();
-
-			double theta = joint->getTheta();
-
-			Matrix4d R;
-			R.setIdentity();
-			R.block<2, 2>(0, 0) << cos(theta), -sin(theta),
-				sin(theta), cos(theta);
-
-			Matrix4d E_P_J = joint->getE_P_J();
-			Matrix4d E_W_P = parent->getEtemp();
-			Matrix4d E_W_C = E_W_P * E_P_J * R * E_J_C;
-			this->E_W_0_temp = E_W_C;
-			if (isDrawing) {
-				this->E_W_0 = E_W_0_temp;
-
-				// Spheres Update
-				if (isSphere) {
-					for (int i = 0; i < (int)spheres.size(); i++) {
-						spheres[i]->step();
-					}
-				}
-
-				// Cylinders Update
-				if (isCylinder) {
-					for (int i = 0; i < (int)cylinders.size(); i++) {
-						Matrix4d E = this->E_W_0 * cylinders[i]->getE_P_0();
-						cylinders[i]->setE(E);
-						cylinders[i]->step();
-					}
-				}
-
-				// Double Cylinders Update
-				if (isDoubleCylinder) {
-					for (int i = 0; i < (int)double_cylinders.size(); i++) {
-						// Update U
-						Matrix4d E = double_cylinders[i]->getParent_U()->getE() * double_cylinders[i]->getE_P_U();				
-						double_cylinders[i]->setE_U(E);
-					
-						//Update V
-						E = double_cylinders[i]->getParent_V()->getE() * double_cylinders[i]->getE_P_V();
-						double_cylinders[i]->setE_V(E);
-						double_cylinders[i]->step();
-					}
-				}
-
-				// Points Update
-				for (int i = 0; i < (int)points.size(); i++) {
-					points[i]->update(this->E_W_0);
-				}
-			}
-		}
-	}
-
-	// Joint Update
-	if (i != 0) {
-		Matrix4d E_C_J = getEtemp().inverse() * parent->getEtemp() * joint->getE_P_J();
-		this->joint->setE_C_J(E_C_J);
-	}
-
-}
 
 void Rigid::setRotationAngle(double _theta) {
 	this->joint->setTheta(_theta);

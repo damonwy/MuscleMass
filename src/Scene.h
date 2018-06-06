@@ -58,12 +58,10 @@ private:
 	double V0;
 	double K0;
 
-	//double y_t;
 	Vector12d phi; // twist
 	std::vector < double > Kvec;
 	std::vector < double > Vvec;
 	std::vector < double > Tvec;
-	//std::vector < double > y_t_vec;
 	std::vector < Vector12d > Twist_vec;
 
 	std::vector<double> y;
@@ -72,7 +70,6 @@ private:
 	std::shared_ptr<Shape> sphereShape;
 	std::shared_ptr<Shape> boxShape;
 	std::shared_ptr<Shape> cylinderShape;
-
 
 	std::vector< std::shared_ptr<Rigid> > boxes;
 	std::shared_ptr<Solver> solver;
