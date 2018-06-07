@@ -2,6 +2,8 @@
 #include "Rigid.h"
 #include "Joint.h"
 #include "MatlabDebug.h"
+#include "Spring.h"
+#include "Particle.h"
 
 #include <iostream>
 #include <iomanip>
@@ -16,12 +18,14 @@ using namespace std;
 using namespace Eigen;
 #include <unsupported/Eigen/MatrixFunctions> // TODO: avoid using this later, write a func instead
 
-Solver::Solver(vector< shared_ptr<Rigid> > _boxes, bool _isReduced, Integrator _time_integrator):
-num_joints(_boxes.size() - 1)
+Solver::Solver(vector< shared_ptr<Rigid> > _boxes, vector< shared_ptr<Spring> > _springs, bool _isReduced, Integrator _time_integrator):
+num_joints(_boxes.size() - 1),
+boxes(_boxes),
+springs(_springs),
+time_integrator(_time_integrator),
+isReduced(_isReduced),
+epsilon(1e-8)
 {
-	this->boxes = _boxes;
-	this->isReduced = _isReduced;
-	this->time_integrator = _time_integrator;
 
 	if (isReduced) {
 		m = 6 * (int)boxes.size();
@@ -63,12 +67,19 @@ void Solver::dynamics(double t, double y[], double yp[])
 //
 {
 	// Solve linear system
+	A.setZero();
+	x.setZero();
+	b.setZero();
+
 	if (isReduced) {
+		M.setZero();
+		J.setZero();
+		f.setZero();
+
 		// Unpack input y[]
 		VectorXd theta, thetadot;
 		theta.resize(num_joints);
 		thetadot.resize(num_joints);
-
 
 		for (int i = 0; i < num_joints; i++) {
 			theta(i) = y[i];
@@ -83,23 +94,11 @@ void Solver::dynamics(double t, double y[], double yp[])
 			}
 		}
 
-
 		J = getJ_twist_thetadot();
-		//cout << J << endl;
-
 		MatrixXd JJ = J.block(0, n - num_joints, m, num_joints);
-		//cout << JJ << endl;
-
-		A = JJ.transpose() * M * JJ;
-
-		//cout << A << endl;
-
 		x.setZero();
 		x.segment(6, num_joints) = thetadot;
-		
 		VectorXd phi = J * x;
-		//cout << phi << endl;
-
 		for (int i = 0; i < (int)boxes.size(); i++) {
 			auto box = boxes[i];
 			box->setTwist(phi.segment<6>(6 * i));
@@ -108,12 +107,70 @@ void Solver::dynamics(double t, double y[], double yp[])
 		}
 		
 		b = J.transpose() * f;
-		//cout <<"b"<< b << endl;
+		
+		// Compute the inertia matrix of spring using finite difference 
+		int n_samples = 10;
+		
+		VectorXd pert;
+		pert.resize(num_joints);
+
+		for (int i = 0; i < (int)springs.size(); ++i) {
+			springs[i]->setPosBeforePert();
+		}
+
+		MatrixXd M_s;
+		M_s.resize(num_joints, num_joints);
+		M_s.setZero(); 
+		for (int i = 0; i < (int)springs.size(); ++i) {
+			MatrixXd J_s;
+			J_s.resize(3 * n_samples, num_joints);
+			J_s.setZero();
+
+			double dm = springs[i]->mass / n_samples;
+			pert = theta;
+			// For each theta add a relative small perturbation
+
+			// Construct Material Jacobian Matrix of all the sample points
+			for (int ii = 0; ii < num_joints; ++ii) {
+				pert(ii) += epsilon;
+
+				// Compute new configuration
+				for (int iii = 0; iii < (int)boxes.size(); ++iii) {
+					auto box = boxes[iii];
+					if (iii != 0) {
+						box->setJointAngle(pert(iii - 1), false);
+					}
+				}
+
+				for (int iii = 0; iii < n_samples; ++iii) {
+					Vector3d p_nopert;
+					double s =  iii / n_samples;
+					p_nopert = (1 - s)*springs[i]->p0_b + s*springs[i]->p1_b;
+
+					Vector3d p_pert;
+					p_pert = (1 - s)*springs[i]->p0->x_temp + s*springs[i]->p1->x_temp;
+
+					// Save to J_s
+					J_s.block(3 * iii, ii, 3, 1) = (p_pert - p_nopert) / epsilon;
+				}
+			}
+
+			// Sum up the inertia matrix of all the sample points
+			for (int ii = 0; ii < n_samples; ++ii) {
+				MatrixXd J_ii = J_s.block(3 * ii, 0, 3, num_joints);
+				MatrixXd M_ii = J_ii.transpose() * J_ii * dm;
+				cout << M_ii << endl;
+				M_s += M_ii;
+			}
+		}
+
+		// Update M matrix here..
+		M.block(6, 6 , num_joints, num_joints) += M_s;
+
+		A = JJ.transpose() * M * JJ; 
 
 		// Don't use the first rigid body because it has no constraint so it will affect the result of thetaddot
 		x.segment(6, num_joints) = A.ldlt().solve(b.segment(6, num_joints));	// thetaddot
-
-		//cout << "x" << x << endl;
 
 		for (int i = 0; i < num_joints; i++) {
 			yp[num_joints + i] = x(6 + i);		
@@ -131,7 +188,7 @@ void Solver::dynamics(double t, double y[], double yp[])
 			phi(i) = y[6 * (boxes.size() - 1) + i];
 			yp[i] = y[6 * (boxes.size() - 1) + i];
 		}
-		
+		//cout << Evec << endl;
 		for (int i = 0; i < (int)boxes.size(); i++) {
 			if (i != 0) {
 				auto box = boxes[i];
@@ -141,7 +198,6 @@ void Solver::dynamics(double t, double y[], double yp[])
 				box->computeTempForces();
 				Matrix4d E_C_J = box->getEtemp().inverse() * box->getParent()->getEtemp() * box->getJoint()->getE_P_J();
 				box->getJoint()->setE_C_J(E_C_J);
-			
 			}
 		}
 
@@ -323,8 +379,16 @@ VectorXd Solver::solve_once(double y[], double yp[], const int neqn, double _t_s
 }
 
 void Solver::step(double h) {
+	A.setZero();
+	x.setZero();
+	b.setZero();
+
 	// Solve linear system
 	if (isReduced) {
+		M.setZero();
+		J.setZero();
+		f.setZero();
+
 		J = getJ_twist_thetadot();
 
 		for (int i = 0; i < (int)boxes.size(); i++) {
@@ -2234,6 +2298,30 @@ int Solver::r8_rkf45(void (Solver::*f)(double t, double y[], double yp[]), int n
 	if (r8_abs(dt) <= 26.0 * eps * r8_abs(*t))
 	{
 		*t = tout;
+		//if (isReduced) {
+		//	for (i = 0; i < neqn; i++)
+		//	{
+		//		y[i] = y[i] + dt * yp[i];
+		//	}
+		//}
+		//else {
+		//	//maximal 
+		//	// Do sth special with E vector
+		//	for (i = 0; i < neqn / 12; i++) {
+		//		Vector6d Evec;
+		//		Evec << y[6 * i + 0], y[6 * i + 1], y[6 * i + 2], y[6 * i + 3], y[6 * i + 4], y[6 * i + 5];
+		//		Matrix4d E0 = Rigid::bracket6(Evec).exp();
+		//		Vector6d Phi;
+		//		Phi << yp[6 * i + 0], yp[6 * i + 1], yp[6 * i + 2], yp[6 * i + 3], yp[6 * i + 4], yp[6 * i + 5];
+		//		Matrix4d E1 = Rigid::integrate(E0, Phi, dt);
+		//		Vector6d E1vec = Rigid::unbracket6(E1.log());
+
+		//		for (int ii = 0; ii < 6; ii++) {
+		//			y[6 * i + ii] = E1vec(ii);
+		//		}
+		//	}
+		//}
+
 		for (i = 0; i < neqn; i++)
 		{
 			y[i] = y[i] + dt * yp[i];

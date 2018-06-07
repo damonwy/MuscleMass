@@ -24,6 +24,7 @@ public:
 	void reset();
 	void draw(std::shared_ptr<MatrixStack> MV, const std::shared_ptr<Program> p) const;
 	void update(Eigen::Matrix4d E);
+	void updateTemp(Eigen::Matrix4d E);
 	
 	double r; // radius
 	double m; // mass
@@ -32,6 +33,7 @@ public:
 	Eigen::Vector3d v0; // initial velocity
 	Eigen::Vector3d x;  // position
 	Eigen::Vector3d v;  // velocity
+	Eigen::Vector3d x_temp; //
 	bool fixed;
 	Eigen::Vector3d normal;
 	

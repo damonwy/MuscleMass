@@ -7,13 +7,14 @@
 #include <Eigen/Dense>
 
 class Rigid;
-
+class Spring;
+class Particle;
 enum Integrator { RKF45, SYMPLECTIC};
 
 class Solver
 {
 public:
-	Solver(std::vector< std::shared_ptr<Rigid> > _boxes, bool _isReduced, Integrator _time_integrator);
+	Solver(std::vector< std::shared_ptr<Rigid> > _boxes, std::vector< std::shared_ptr<Spring> > _springs, bool _isReduced, Integrator _time_integrator);
 	virtual ~Solver();
 	void step(double h);
 	void dynamics(double t, double y[], double yp[]);
@@ -50,12 +51,15 @@ public:
 	const int num_joints;
 private:
 	std::vector< std::shared_ptr<Rigid> > boxes;
+	std::vector< std::shared_ptr<Spring> > springs;
+
 	Eigen::MatrixXd A;
 	Eigen::MatrixXd M;
 	Eigen::MatrixXd J;
 	Eigen::VectorXd x;
 	Eigen::VectorXd b;
 	Eigen::VectorXd f;
+	double epsilon;
 	bool isReduced;
 	
 	

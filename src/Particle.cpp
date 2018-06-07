@@ -65,6 +65,15 @@ void Particle::update(Matrix4d E) {
 	this->x = pos.segment<3>(0);
 }
 
+void Particle::updateTemp(Matrix4d E) {
+	Vector4d pos;
+	pos.segment<3>(0) = this->x0;
+	pos(3) = 1.0;
+
+	pos = E * pos;
+	this->x_temp = pos.segment<3>(0);
+}
+
 void Particle::draw(shared_ptr<MatrixStack> MV, const shared_ptr<Program> prog) const
 {
 	if(sphere) {

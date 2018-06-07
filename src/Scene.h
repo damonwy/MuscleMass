@@ -16,6 +16,7 @@ class Program;
 class Shape;
 class Rigid;
 class Solver;
+class Spring;
 class Joint;
 class Vector;
 class WrapSphere;
@@ -74,6 +75,7 @@ private:
 	std::vector< std::shared_ptr<Rigid> > boxes;
 	std::shared_ptr<Solver> solver;
 	std::vector< std::shared_ptr<WrapDoubleCylinder> > wrap_doublecylinders;
+	std::vector< std::shared_ptr<Spring> > springs;
 
 	nlohmann::json js;
 };

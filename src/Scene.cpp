@@ -15,6 +15,7 @@
 #include "MatlabDebug.h"
 #include "Vector.h"
 #include "JsonEigen.h"
+#include "Spring.h"
 
 using namespace std;
 using namespace Eigen;
@@ -80,14 +81,14 @@ void Scene::load(const string &RESOURCE_DIR)
 	boxes.push_back(box1);
 
 	p += Vector3d(4.0, 0.0, 0.0);
-	p -= Vector3d(2.0, 2.0, 0.0);
+	//p -= Vector3d(2.0, 2.0, 0.0);
 	//from_json(js["Rx"], R);
-	R.setIdentity();
+	//R.setIdentity();
 	auto box2 = make_shared<Rigid>(boxShape, R, p, dimension, scale, mass, js["isReduced"]);
 	box2->setIndex(2);
 	box2->setParent(box1);
 	//box1->addChild(box2);
-	boxes.push_back(box2);
+	//boxes.push_back(box2);
 
 	R.setIdentity();
 	p.setZero();
@@ -150,13 +151,26 @@ void Scene::load(const string &RESOURCE_DIR)
 
 		y.resize(12 * (boxes.size() - 1));
 		yp.resize(12 * (boxes.size() - 1));
-
 	}
 	
 
 	// Init Particles
 	sphereShape = make_shared<Shape>();
 	sphereShape->loadMesh(RESOURCE_DIR + "sphere2.obj");
+	auto s_p = make_shared<Particle>(sphereShape);
+	from_json(js["s_p_x0"], s_p->x0);
+	s_p->r = js["s_p_r"];
+	s_p->update(box0->getE());
+	box0->addPoint(s_p);
+
+	// Attached to springs
+	auto s_s = make_shared<Particle>(sphereShape);
+	from_json(js["s_s_x0"], s_s->x0);
+	s_s->r = js["s_s_r"];
+	s_s->update(box1->getE());
+	box1->addPoint(s_s);
+
+	// Attached to wrapCylinder
 	auto wc_p = make_shared<Particle>(sphereShape);
 	from_json(js["wc_p_x0"], wc_p->x0);
 	wc_p->r = js["wc_p_r"];
@@ -176,6 +190,7 @@ void Scene::load(const string &RESOURCE_DIR)
 	wc_o->update(box2->getE());
 	box2->addPoint(wc_o);
 
+	// Attached to wrapDoubleCylinder
 	auto wdc_u = make_shared<Particle>(sphereShape);
 	wdc_u->x0 << cylinder_radius + box1->getDimension()(0), -0.5 * box1->getDimension()(1) + 1.0, 0.0;
 	wdc_u->r = js["wdc_u_r"];
@@ -277,8 +292,13 @@ void Scene::load(const string &RESOURCE_DIR)
 	wrap_sphere->setParent(box2);
 	box2->addSphere(wrap_sphere);
 
+	// Init Spring
+	double spring_mass = js["spring_mass"];
+	auto spring = make_shared<Spring>(s_p, s_s, spring_mass);
+	springs.push_back(spring);
+
 	// Init solver	
-	solver = make_shared<Solver>(boxes, js["isReduced"], time_integrator);
+	solver = make_shared<Solver>(boxes, springs, js["isReduced"], time_integrator);
 }
 
 void Scene::init()
@@ -398,13 +418,13 @@ void Scene::step()
 			}
 
 			// Update twists
-			boxes[1]->setTwist(phi1);
-			boxes[2]->setTwist(phi2);
 			for (int i = 0; i < (int)boxes.size(); i++) {
 				// Update E
 				boxes[i]->step(h);
 			}
-
+			boxes[1]->setTwist(phi1);
+			boxes[2]->setTwist(phi2);
+			
 			Matrix4d E1 = boxes[1]->getE();
 			Matrix4d E2 = boxes[2]->getE();
 			e1 = Rigid::unbracket6(E1.log());
@@ -414,11 +434,8 @@ void Scene::step()
 				y[i] = e1(i);
 				y[6 + i] = e2(i);
 			}
-
-			cout << "phi2:" << endl << phi2 << endl;
-
-		}
-		
+			//cout << "phi2:" << endl << phi2 << endl;
+		}		
 	}
 	else if (solver->time_integrator == SYMPLECTIC) {
 		solver->step(h);
@@ -505,5 +522,9 @@ void Scene::draw(shared_ptr<MatrixStack> MV, const shared_ptr<Program> prog, con
 {
 	for (int i = 0; i < (int)boxes.size(); ++i) {
 		boxes[i]->draw(MV, prog, prog2, P);
+	}
+
+	for (int i = 0; i < (int)springs.size(); ++i) {
+		springs[i]->draw(MV, prog, prog2, P);
 	}
 }
