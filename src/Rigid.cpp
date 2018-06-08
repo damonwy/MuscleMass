@@ -9,7 +9,7 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #include "Rigid.h"
-#include "Joint.h"
+
 #include "Shape.h"
 #include "Program.h"
 #include "MatrixStack.h"
@@ -26,17 +26,10 @@ Rigid::Rigid() {
 }
 
 Rigid::Rigid(const shared_ptr<Shape> s, Matrix3d _R, Vector3d _p, Vector3d _dimension, double _r, double _m, bool _isReduced) :
-	r(_r),
-	m(_m),
-	i(-1),
-	box(s),
-	dimension(_dimension),
-	grav(0.0, -9.8, 0.0),
-	isReduced(_isReduced)
+	r(_r), m(_m), i(-1), box(s), dimension(_dimension), grav(0.0, -9.8, 0.0), isReduced(_isReduced)
 {
 	this->twist.setZero();
 	this->force.setZero();
-
 
 	E_W_0.setZero();
 	E_W_0(3, 3) = 1.0;
@@ -57,23 +50,6 @@ Rigid::Rigid(const shared_ptr<Shape> s, Matrix3d _R, Vector3d _p, Vector3d _dime
 					  0, 0, 0, m, 0, 0,
 					  0, 0, 0, 0, m, 0,
 					  0, 0, 0, 0, 0, m;
-	
-	this->joint = make_shared<Joint>();
-
-}
-
-void Rigid::tare()
-{
-	this->twist.setZero();
-}
-
-void Rigid::reset()
-{
-	this->twist.setZero();
-	this->force.setZero();
-	this->E_W_0 = E_W_0_0;
-	this->joint->reset();
-	//setJointAngle(0.0);
 }
 
 void Rigid::step(double h) {
@@ -85,12 +61,12 @@ void Rigid::step(double h) {
 		if (i != 0) {
 			Matrix4d E_J_C = joint->getE_C_J().inverse();
 
-			double theta = joint->getTheta();
+			double dtheta = joint->getDTheta();
 			
 			Matrix4d R;
 			R.setIdentity();
-			R.block<2, 2>(0, 0) << cos(theta), -sin(theta),
-				sin(theta), cos(theta);
+			R.block<2, 2>(0, 0) << cos(dtheta), -sin(dtheta),
+				sin(dtheta), cos(dtheta);
 
 			Matrix4d E_P_J = joint->getE_P_J();
 			Matrix4d E_W_P = parent->getE();
@@ -127,12 +103,12 @@ void Rigid::setJointAngle(double _theta, bool isDrawing) {
 		if (i != 0) {
 			Matrix4d E_J_C = joint->getE_C_J().inverse();
 
-			double theta = joint->getTheta();
+			double dtheta = joint->getDTheta();
 
 			Matrix4d R;
 			R.setIdentity();
-			R.block<2, 2>(0, 0) << cos(theta), -sin(theta),
-				sin(theta), cos(theta);
+			R.block<2, 2>(0, 0) << cos(dtheta), -sin(dtheta),
+				sin(dtheta), cos(dtheta);
 
 			Matrix4d E_P_J = joint->getE_P_J();
 			//cout << "update before"<<endl<<joint->getE_C_J() << endl;
@@ -380,119 +356,18 @@ void Rigid::computeTempForces() {
 	this->force = coriolis_forces + body_forces;
 }
 
-// get
-Eigen::Vector3d Rigid::getP() const {
-	return this->E_W_0.block<3, 1>(0, 3);
+void Rigid::tare()
+{
+	this->twist.setZero();
 }
 
-Eigen::Matrix3d Rigid::getR() const {
-	return this->E_W_0.block<3, 3>(0, 0);
-}
-
-Matrix6d Rigid::getMassMatrix() const {
-	return this->mass_mat;
-}
-
-Vector6d Rigid::getTwist() const {
-	return this->twist;
-}
-
-Vector6d Rigid::getForce() const {
-	return this->force;
-}
-
-shared_ptr<Joint> Rigid::getJoint() const {
-	return this->joint;
-}
-
-Matrix4d Rigid::getE() const {
-	return this->E_W_0;
-}
-
-Matrix4d Rigid::getEtemp() const {
-	return this->E_W_0_temp;
-}
-
-shared_ptr<Rigid> Rigid::getParent() const {
-	return this->parent;
-}
-
-int Rigid::getIndex() const {
-	return this->i;
-}
-
-Vector3d Rigid::getDimension() const {
-	return this->dimension;
-}
-
-// set
-void Rigid::setEtemp(Matrix4d E) {
-	this->E_W_0_temp = E;
-}
-
-void Rigid::setE(Eigen::Matrix4d E) {
-	this->E_W_0 = E;
-}
-
-void Rigid::setP(Eigen::Vector3d p) {
-	this->E_W_0.block<3, 1>(0, 3) = p;
-}
-
-void Rigid::setR(Eigen::Matrix3d R) {
-	this->E_W_0.block<3, 3>(0, 0) = R;
-}
-
-void Rigid::setTwist(Vector6d _twist) {
-	this->twist = _twist;
-}
-
-void Rigid::setForce(Vector6d _force) {
-	this->force = _force;
-}
-
-void Rigid::setIndex(int _i) {
-	this->i = _i;
-}
-
-void Rigid::setParent(shared_ptr<Rigid> _parent) {
-	this->parent = _parent;
-}
-
-
-void Rigid::setRotationAngle(double _theta) {
-	this->joint->setTheta(_theta);
-}
-
-void Rigid::setCylinderStatus(bool _isCylinder) {
-	this->isCylinder = _isCylinder;
-}
-
-void Rigid::setDoubleCylinderStatus(bool _isDoubleCylinder) {
-	this->isDoubleCylinder = _isDoubleCylinder;
-}
-
-void Rigid::setSphereStatus(bool _isSphere) {
-	this->isSphere = _isSphere;
-}
-
-void Rigid::addChild(shared_ptr<Rigid> _child) {
-	this->children.push_back(_child);
-}
-
-void Rigid::addCylinder(shared_ptr<WrapCylinder> _cylinder) {
-	this->cylinders.push_back(_cylinder);
-}
-
-void Rigid::addDoubleCylinder(shared_ptr<WrapDoubleCylinder> _double_cylinders) {
-	this->double_cylinders.push_back(_double_cylinders);
-}
-
-void Rigid::addPoint(shared_ptr<Particle> _point) {
-	this->points.push_back(_point);
-}
-
-void Rigid::addSphere(shared_ptr<WrapSphere> _sphere) {
-	this->spheres.push_back(_sphere);
+void Rigid::reset()
+{
+	this->twist.setZero();
+	this->force.setZero();
+	this->E_W_0 = E_W_0_0;
+	this->joint->reset();
+	//setJointAngle(0.0);
 }
 
 Rigid::~Rigid()

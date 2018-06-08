@@ -9,7 +9,7 @@
 #define EIGEN_DONT_ALIGN_STATICALLY
 #include <Eigen/Dense>
 #include "TypeDef.h"
-
+#include "Joint.h"
 
 class Shape;
 class Program;
@@ -30,49 +30,56 @@ public:
 	void tare();
 	void reset();
 	void step(double h);
-	
 	void draw(std::shared_ptr<MatrixStack> MV, const std::shared_ptr<Program> prog, const std::shared_ptr<Program> prog2, std::shared_ptr<MatrixStack> P) const;
 	void computeForces();	  // Use current E
 	void computeTempForces(); // Use temporary E
 
 	// set
+	void setIndex(int _i){ this->i = _i; }
+	void setP(Eigen::Vector3d p) { this->E_W_0.block<3, 1>(0, 3) = p; }
+	void setR(Eigen::Matrix3d R) { this->E_W_0.block<3, 3>(0, 0) = R; }
 
-	void setIndex(int _i);
-	void setP(Eigen::Vector3d p);
-	void setR(Eigen::Matrix3d R);
-	void setTwist(Vector6d _twist);
-	void setForce(Vector6d _force);
-	void setParent(std::shared_ptr<Rigid> _parent);
-	void setCylinderStatus(bool _isCylinder);
-	void setDoubleCylinderStatus(bool _isDoubleCylinder);
-	void setSphereStatus(bool _isSphere);
-	void setEtemp(Eigen::Matrix4d E);
-	void setE(Eigen::Matrix4d E);
+	void setTwist(Vector6d _twist) { this->twist = _twist; }
+	void setForce(Vector6d _force) { this->force = _force; }
+	void setParent(std::shared_ptr<Rigid> _parent) { this->parent = _parent; }
 
-	void addChild(std::shared_ptr<Rigid> _child);
+	void setCylinderStatus(bool _isCylinder) { this->isCylinder = _isCylinder; }
+	void setDoubleCylinderStatus(bool _isDoubleCylinder) { this->isDoubleCylinder = _isDoubleCylinder; }
+	void setSphereStatus(bool _isSphere) { this->isSphere = _isSphere; }
+
+	void setEtemp(Eigen::Matrix4d E) { this->E_W_0_temp = E; }
+	void setE(Eigen::Matrix4d E) { this->E_W_0 = E; }
+	void setJoint(std::shared_ptr<Joint> _joint) { this->joint = _joint; }
+	void setRotationAngle(double _dtheta) { this->joint->setDTheta(_dtheta); }
+	void setAngle(double _theta) { this->joint->setTheta(_theta); }
+
+	void addPoint(std::shared_ptr<Particle> _point) { this->points.push_back(_point); }
+	void addChild(std::shared_ptr<Rigid> _child) { this->children.push_back(_child); }
+	void addSphere(std::shared_ptr<WrapSphere> _sphere) { this->spheres.push_back(_sphere); }
+	void addCylinder(std::shared_ptr<WrapCylinder> _cylinder) { this->cylinders.push_back(_cylinder); }
+	void addDoubleCylinder(std::shared_ptr<WrapDoubleCylinder> _double_cylinders) { this->double_cylinders.push_back(_double_cylinders); } 
+	
 	void setJointAngle(double _theta, bool isDrawing);
-	void setRotationAngle(double _theta);
-	void addSphere(std::shared_ptr<WrapSphere> _sphere);
-	void addCylinder(std::shared_ptr<WrapCylinder> _cylinder);
-	void addDoubleCylinder(std::shared_ptr<WrapDoubleCylinder> _double_cylinders);
-	void addPoint(std::shared_ptr<Particle> _point);
+	
 	void updateCylinders();
 	void updateDoubleCylinders();
 	void updateSpheres();
 	void updatePoints();
 
 	// get
-	Eigen::Vector3d getP() const;
-	Eigen::Matrix3d getR() const;
-	Matrix6d getMassMatrix() const;
-	Vector6d getTwist() const;
-	Vector6d getForce() const;
-	std::shared_ptr<Joint> getJoint() const;
-	Eigen::Matrix4d getE() const;
-	Eigen::Matrix4d getEtemp() const;
-	std::shared_ptr<Rigid> getParent() const;
-	int getIndex() const;
-	Eigen::Vector3d getDimension() const;
+	Eigen::Matrix4d getE() const { return this->E_W_0; }
+	Eigen::Vector3d getP() const { return this->E_W_0.block<3, 1>(0, 3); }
+	Eigen::Matrix3d getR() const { return this->E_W_0.block<3, 3>(0, 0); }
+	Eigen::Matrix4d getEtemp() const { return this->E_W_0_temp; }
+	Eigen::Vector3d getDimension() const { return this->dimension; }
+
+	Vector6d getTwist() const { return this->twist; }
+	Vector6d getForce() const { return this->force; }
+	Matrix6d getMassMatrix() const { return this->mass_mat; }
+	
+	std::shared_ptr<Rigid> getParent() const { return this->parent; }
+	std::shared_ptr<Joint> getJoint() const { return this->joint; }
+	int getIndex() const{ return this->i; }
 
 	static Eigen::Matrix4d inverse(const Eigen::Matrix4d &E);
 	static Matrix3x6d gamma(const Eigen::Vector3d &r);
@@ -94,14 +101,16 @@ public:
 
 private:
 	const std::shared_ptr<Shape> box;
+
 	std::shared_ptr<Rigid> parent;
+	std::shared_ptr<Joint> joint;
+
+	std::vector< std::shared_ptr<Particle> > points;
 	std::vector< std::shared_ptr<Rigid> > children;
 	std::vector< std::shared_ptr<WrapSphere> > spheres;
 	std::vector< std::shared_ptr<WrapCylinder> > cylinders;
 	std::vector< std::shared_ptr<WrapDoubleCylinder> > double_cylinders;
 
-	std::vector< std::shared_ptr<Particle> > points;
-	std::shared_ptr<Joint> joint;
 	Eigen::Matrix4d E_W_0;		// Where current transform is wrt world
 	Eigen::Matrix4d E_W_0_0;	// Where current transform is wrt world at the start
 	Eigen::Matrix4d E_W_0_temp; // for computational purpose, not for drawing
@@ -109,6 +118,8 @@ private:
 	Matrix6d mass_mat;
 	Vector6d twist;
 	Vector6d force;
+
 	int i;  // index
 };
+
 #endif // MUSCLEMASS_SRC_RIGID_H_

@@ -104,24 +104,19 @@ void Scene::load(const string &RESOURCE_DIR)
 	boxes.push_back(box3);*/
 
 	// Init joints
-	auto joint1 = box1->getJoint();
+	
 	Matrix4d E_P_J;
 	E_P_J.setIdentity();
 	E_P_J(1, 3) = -2.0;
 	Matrix4d E_C_J = box1->getE().inverse() * box0->getE() * E_P_J;
 
-	joint1->setE_P_J_0(E_P_J);
-	joint1->setE_C_J_0(E_C_J);
-	joint1->setTheta_0(0.0);
-	joint1->reset();
+	auto joint1 = make_shared<Joint>(E_P_J, E_C_J, double(js["theta_1"]) / 180.0 * PI, double(js["min_theta_1"]) / 180.0 * PI, double(js["max_theta_1"]) / 180.0 * PI);
+	box1->setJoint(joint1);
 
-	auto joint2 = box2->getJoint();
 	E_C_J = box2->getE().inverse() * box1->getE() * E_P_J;
-
-	joint2->setE_P_J_0(E_P_J);
-	joint2->setE_C_J_0(E_C_J);
-	joint2->setTheta_0(0.0);
-	joint2->reset();
+	
+	auto joint2 = make_shared<Joint>(E_P_J, E_C_J, double(js["theta_2"]) / 180.0 * PI, double(js["min_theta_2"]) / 180.0 * PI, double(js["max_theta_2"]) / 180.0 * PI);
+	box2->setJoint(joint2);
 
 	// Init ODE params
 	if (js["isReduced"]) {
@@ -493,8 +488,10 @@ void Scene::step()
 	step_i += 1;
 	computeEnergy();
 
-	int plot_steps = js["plot_steps"];
-	saveData(plot_steps);
+	if (js["isPlotEnergy"]) {
+		int plot_steps = js["plot_steps"];
+		saveData(plot_steps);
+	}
 }
 
 void Scene::saveData(int num_steps) {

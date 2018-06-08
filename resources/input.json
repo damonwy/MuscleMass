@@ -7,13 +7,14 @@
 	"ws_mass": 1.0,
 	"scale": 1.0, 
 	"isReduced": true,
+	"isPlotEnergy": false,
 	"isSpring":false,
 	"isSphere":true,
 	"isCylinder":false,
 	"isDoubleCylinder":false,
 	"num_points_on_arc": 20,
 	"cylinder_radius": 0.5,
-	"plot_steps": 1000,
+	"plot_steps": 5000,
 	"grav": [0.0, -9.8, 0.0],
 	"Rz": ["0.0 -1.0 0.0", "1.0 0.0 0.0", "0.0 0.0 1.0"],
 	"Rx": ["1.0 0.0 0.0", "0.0 0.0 1.0", "0.0 -1.0 0.0"],
@@ -36,5 +37,11 @@
 	"ws_p_r": 0.1,
 	"ws_s_x0": [1.0, -2.0, 0.0],
 	"ws_s_r": 0.1,
-	"ws_o_r": 0.1
+	"ws_o_r": 0.1,
+	"theta_1": 0.0,
+	"max_theta_1": 180.0,
+	"min_theta_1": -180.0,
+	"theta_2": 0.0,
+	"max_theta_2": 45.0,
+	"min_theta_2": -45.0
 }
