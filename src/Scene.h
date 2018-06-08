@@ -9,6 +9,7 @@
 #define EIGEN_DONT_ALIGN_STATICALLY
 #include <Eigen/Dense>
 #include <json.hpp>
+#include "TypeDef.h"
 
 class Particle;
 class MatrixStack;
@@ -22,8 +23,8 @@ class Vector;
 class WrapSphere;
 class WrapCylinder;
 class WrapDoubleCylinder;
-
-typedef Eigen::Matrix<double, 12, 1> Vector12d;
+class SymplecticIntegrator;
+class RKF45Integrator;
 
 class Scene
 {
@@ -77,7 +78,10 @@ private:
 	std::vector< std::shared_ptr<WrapDoubleCylinder> > wrap_doublecylinders;
 	std::vector< std::shared_ptr<Spring> > springs;
 
+	std::shared_ptr<SymplecticIntegrator> symplectic_solver;
+	std::shared_ptr<RKF45Integrator> rkf45_solver;
 	nlohmann::json js;
+	Integrator time_integrator;
 };
 
 #endif // MUSCLEMASS_SRC_SCENE_H_

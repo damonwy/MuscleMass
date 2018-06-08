@@ -135,6 +135,7 @@ void Rigid::setJointAngle(double _theta, bool isDrawing) {
 				sin(theta), cos(theta);
 
 			Matrix4d E_P_J = joint->getE_P_J();
+			//cout << "update before"<<endl<<joint->getE_C_J() << endl;
 			Matrix4d E_W_P = parent->getEtemp();
 			Matrix4d E_W_C = E_W_P * E_P_J * R * E_J_C;
 			this->E_W_0_temp = E_W_C;
@@ -157,6 +158,7 @@ void Rigid::setJointAngle(double _theta, bool isDrawing) {
 	if (i != 0) {
 		Matrix4d E_C_J = getEtemp().inverse() * parent->getEtemp() * joint->getE_P_J();
 		this->joint->setE_C_J(E_C_J);
+		//cout << "update after" << endl << joint->getE_C_J() << endl;
 	}
 }
 

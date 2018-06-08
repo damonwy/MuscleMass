@@ -1,5 +1,8 @@
 #pragma once
+#include "TypeDef.h"
 
+#ifndef MUSCLEMASS_SRC_SOLVER_H_
+#define MUSCLEMASS_SRC_SOLVER_H_
 #include <vector>
 #include <memory>
 
@@ -9,7 +12,7 @@
 class Rigid;
 class Spring;
 class Particle;
-enum Integrator { RKF45, SYMPLECTIC};
+
 
 class Solver
 {
@@ -61,7 +64,9 @@ private:
 	Eigen::VectorXd f;
 	double epsilon;
 	bool isReduced;
+	Eigen::Vector3d grav;
 	
 	
 };
 
+#endif // MUSCLEMASS_SRC_SOLVER_H_

@@ -126,6 +126,10 @@ void WrapSphere::step() {
 	compute();
 	if (this->status == wrap) {
 		arc_points = getPoints(num_points);
+		// for heon
+		/*cout << "P" << point_P << endl;
+		cout << "S" << point_S << endl;
+		cout << "O" << point_O << endl;*/
 	}
 }
 

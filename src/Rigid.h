@@ -8,6 +8,8 @@
 
 #define EIGEN_DONT_ALIGN_STATICALLY
 #include <Eigen/Dense>
+#include "TypeDef.h"
+
 
 class Shape;
 class Program;
@@ -17,13 +19,6 @@ class WrapSphere;
 class WrapCylinder;
 class Particle;
 class WrapDoubleCylinder;
-
-typedef Eigen::Matrix<double, 6, 1> Vector6d;
-typedef Eigen::Matrix<double, 12, 1> Vector12d;
-typedef Eigen::Matrix<double, 6, 6> Matrix6d;
-typedef Eigen::Matrix<double, 3, 6> Matrix3x6d;
-typedef Eigen::Matrix<double, 6, 3> Matrix6x3d;
-typedef Eigen::Matrix<double, 5, 6> Matrix5x6d;
 
 class Rigid
 {

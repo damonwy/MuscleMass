@@ -1,7 +1,6 @@
 #pragma once
-#ifndef __Particle__
-#define __Particle__
-
+#ifndef MUSCLEMASS_SRC_PARTICLE_H_
+#define MUSCLEMASS_SRC_PARTICLE_H_
 #include <vector>
 #include <memory>
 
@@ -41,4 +40,4 @@ private:
 	const std::shared_ptr<Shape> sphere;
 };
 
-#endif
+#endif // MUSCLEMASS_SRC_PARTICLE_H_

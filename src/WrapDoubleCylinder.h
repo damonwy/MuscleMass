@@ -1,5 +1,6 @@
-#ifndef WrapDoubleCylinder_H
-#define WrapDoubleCylinder_H
+#pragma once
+#ifndef MUSCLEMASS_SRC_WRAPDOUBLECYLINDER_H_
+#define MUSCLEMASS_SRC_WRAPDOUBLECYLINDER_H_
 
 /*
 * WrapDoubleCylinder.hpp
@@ -140,4 +141,4 @@ public:
 	
 };
 
-#endif
+#endif // MUSCLEMASS_SRC_WRAPDOUBLECYLINDER_H_

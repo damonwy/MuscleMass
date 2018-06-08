@@ -10,17 +10,20 @@
 #include "WrapSphere.h"
 #include "WrapCylinder.h"
 #include "WrapDoubleCylinder.h"
-#include "Solver.h"
+
 #include "Joint.h"
 #include "MatlabDebug.h"
 #include "Vector.h"
 #include "JsonEigen.h"
 #include "Spring.h"
+#include "SymplecticIntegrator.h"
+#include "RKF45Integrator.h"
+#include "Solver.h"
 
 using namespace std;
 using namespace Eigen;
 using json = nlohmann::json;
-typedef Eigen::Matrix<double, 6, 1> Vector6d;
+
 #include <unsupported/Eigen/MatrixFunctions> // TODO: avoid using this later, write a func instead
 
 Scene::Scene() :
@@ -51,7 +54,7 @@ void Scene::load(const string &RESOURCE_DIR)
 	// Units: meters, kilograms, seconds
 	h = js["h"];
 	Eigen::from_json(js["grav"], grav);
-	Integrator time_integrator = RKF45;
+	time_integrator = SYMPLECTIC;
 
 	// Init boxes
 	boxShape = make_shared<Shape>();
@@ -88,7 +91,11 @@ void Scene::load(const string &RESOURCE_DIR)
 	box2->setIndex(2);
 	box2->setParent(box1);
 	//box1->addChild(box2);
-	//boxes.push_back(box2);
+
+	if (js["isCylinder"] || js["isDoubleCylinder"] || js["isSpring"] || js["isSphere"]) {
+		// If I want to show wrapping, I need box2
+		boxes.push_back(box2);
+	}
 
 	R.setIdentity();
 	p.setZero();
@@ -133,8 +140,7 @@ void Scene::load(const string &RESOURCE_DIR)
 	else {
 		Matrix4d E1 = box1->getE();
 		Matrix4d E2 = box2->getE();
-		Matrix4d EE1 = E1.log();
-		VectorXd e1 = Rigid::unbracket6(EE1);
+		VectorXd e1 = Rigid::unbracket6(E1.log());
 		VectorXd e2 = Rigid::unbracket6(E2.log());
 		for (int i = 0; i < 6; i++) {
 			y.push_back(e1(i));
@@ -294,11 +300,21 @@ void Scene::load(const string &RESOURCE_DIR)
 
 	// Init Spring
 	double spring_mass = js["spring_mass"];
-	auto spring = make_shared<Spring>(s_p, s_s, spring_mass);
-	springs.push_back(spring);
+	if (js["isSpring"]) {
+		auto spring = make_shared<Spring>(s_p, s_s, spring_mass);
+		springs.push_back(spring);
+	}	
 
 	// Init solver	
-	solver = make_shared<Solver>(boxes, springs, js["isReduced"], time_integrator);
+	//solver = make_shared<Solver>(boxes, springs, js["isReduced"], time_integrator);
+
+	if (time_integrator == SYMPLECTIC) {
+		symplectic_solver = make_shared<SymplecticIntegrator>(boxes, springs, js["isReduced"]);
+	}
+	else if (time_integrator == RKF45) {
+		rkf45_solver = make_shared<RKF45Integrator>(boxes, springs, js["isReduced"]);
+	}
+
 }
 
 void Scene::init()
@@ -325,132 +341,153 @@ void Scene::reset()
 
 void Scene::step()
 {
-	if (solver->time_integrator == RKF45) {
-		if (js["isReduced"]) {
-			MatrixXd J = solver->getJ_twist_thetadot();
-			//cout << J << endl;
-			MatrixXd JJ = J.block(0, solver->n - solver->num_joints, solver->m, solver->num_joints);
-			for (int i = 0; i < (int)2 * (boxes.size() - 1); i++) {
-				
-				cout << "yinput" << y[i] << endl;
-			}
-			vector<double> tmp = solver->solve(&y[0], &yp[0], (int)2 * (boxes.size() - 1), t, t + h);
-			///vector<double> tmp = solver->solve(&y[0], &yp[0], (int)2 * (boxes.size() - 1), 0, t);
-
-			y.clear();
-
-			for (int i = 0; i < (int)2 * (boxes.size() - 1); i++) {
-				y.push_back(tmp[i]);
-				cout <<"youtput"<< tmp[i] << endl;
-			}
-
-			VectorXd thetadot;
-			thetadot.resize(boxes.size() - 1);
-
-			for (int i = 0; i < boxes.size() - 1; i++) {
-				thetadot(i) = y[boxes.size() - 1 + i];
-				//cout << thetadot(i) << endl;
-			}
-
-			for (int i = 0; i < (int)boxes.size(); i++) {
-				auto box = boxes[i];
-				if (i != 0) {
-					// Update joint angles
-					box->setJointAngle(y[i - 1], true);
-					//cout << box->getP()(1) << endl;
-				}
-			}
-
-			VectorXd phi = JJ * thetadot;
-			for (int i = 0; i < (int)boxes.size(); i++) {
-				auto box = boxes[i];
-				if (i != 0) {
-					box->setTwist(phi.segment<6>(6 * i));
-				}
-			}
-
-			//this->phi = phi.segment<12>(6);
-
-			// solve_once
-
-			//if (step_i == 0) {
-			//	double y[4] = { 0.0, 0.0, 0.0, 0.0 };
-			//	double yp[4];
-			//	theta_list = solver->solve_once(y, yp, 4, t_start, t_stop, n_step);
-			//	for (int i = 0; i < (int)boxes.size(); i++) {
-			//		auto box = boxes[i];
-			//		if (i != 0) {
-			//			// Update joint angles
-			//			box->setJointAngle(theta_list(2 * step_i + i - 1), true);
-			//			cout << theta_list(2 * step_i + i - 1) << endl;
-			//		}
-			//	}
-			//}
-			//else {
-			//	for (int i = 0; i < (int)boxes.size(); i++) {
-			//		auto box = boxes[i];
-			//		if (i != 0) {
-			//		// Update joint angles
-			//		box->setJointAngle(theta_list(2 * step_i + i - 1), true);	
-			//		cout << theta_list(step_i) << endl;
-			//		}
-			//	}
-			//}
-		}
-		else {
-			// Maximal Coordinate
-			vector<double> tmp = solver->solve(&y[0], &yp[0], (int)12 * (boxes.size() - 1), t, t + h);
-			y.clear();
-
-			for (int i = 0; i < (int)12 * (boxes.size() - 1); i++) {
-				y.push_back(tmp[i]);
-				//cout << tmp[i] << endl;
-			}
-
-			Vector6d e1, e2, phi1, phi2;
-			// Only need twist to update boxes
-			
-			for (int i = 12; i < 18; i++) {
-				phi1(i - 12) = y[i];
-			}
-			for (int i = 18; i < 24; i++) {
-				phi2(i - 18) = y[i];
-			}
-
-			// Update twists
-			for (int i = 0; i < (int)boxes.size(); i++) {
-				// Update E
-				boxes[i]->step(h);
-			}
-			boxes[1]->setTwist(phi1);
-			boxes[2]->setTwist(phi2);
-			
-			Matrix4d E1 = boxes[1]->getE();
-			Matrix4d E2 = boxes[2]->getE();
-			e1 = Rigid::unbracket6(E1.log());
-			e2 = Rigid::unbracket6(E2.log());
-
-			for (int i = 0; i < 6; i++) {
-				y[i] = e1(i);
-				y[6 + i] = e2(i);
-			}
-			//cout << "phi2:" << endl << phi2 << endl;
-		}		
-	}
-	else if (solver->time_integrator == SYMPLECTIC) {
-		solver->step(h);
+//	if (solver->time_integrator == RKF45) {
+//		if (js["isReduced"]) {
+//			MatrixXd J = solver->getJ_twist_thetadot();
+//			//cout << J << endl;
+//			MatrixXd JJ = J.block(0, solver->n - solver->num_joints, solver->m, solver->num_joints);
+//
+//			for (int i = 0; i < (int)2 * (boxes.size() - 1); i++) {
+//				
+//				cout << "yinput" << y[i] << endl;
+//			}
+//
+//			vector<double> tmp = solver->solve(&y[0], &yp[0], (int)2 * (boxes.size() - 1), t, t + h);
+//			///vector<double> tmp = solver->solve(&y[0], &yp[0], (int)2 * (boxes.size() - 1), 0, t);
+//
+//			y.clear();
+//
+//			for (int i = 0; i < (int)2 * (boxes.size() - 1); i++) {
+//				y.push_back(tmp[i]);
+//				cout <<"youtput"<< tmp[i] << endl;
+//			}
+//
+//			VectorXd thetadot;
+//			thetadot.resize(boxes.size() - 1);
+//
+//			for (int i = 0; i < boxes.size() - 1; i++) {
+//				thetadot(i) = y[boxes.size() - 1 + i];
+//				//cout << thetadot(i) << endl;
+//			}
+//
+//			for (int i = 0; i < (int)boxes.size(); i++) {
+//				auto box = boxes[i];
+//				if (i != 0) {
+//					// Update joint angles
+//					box->setJointAngle(y[i - 1], true);
+//					//cout << box->getP()(1) << endl;
+//				}
+//			}
+//
+//			VectorXd phi = JJ * thetadot;
+//			for (int i = 0; i < (int)boxes.size(); i++) {
+//				auto box = boxes[i];
+//				if (i != 0) {
+//					box->setTwist(phi.segment<6>(6 * i));
+//				}
+//			}
+//
+//			//this->phi = phi.segment<12>(6);
+//
+//			// solve_once
+//
+//			//if (step_i == 0) {
+//			//	double y[4] = { 0.0, 0.0, 0.0, 0.0 };
+//			//	double yp[4];
+//			//	theta_list = solver->solve_once(y, yp, 4, t_start, t_stop, n_step);
+//			//	for (int i = 0; i < (int)boxes.size(); i++) {
+//			//		auto box = boxes[i];
+//			//		if (i != 0) {
+//			//			// Update joint angles
+//			//			box->setJointAngle(theta_list(2 * step_i + i - 1), true);
+//			//			cout << theta_list(2 * step_i + i - 1) << endl;
+//			//		}
+//			//	}
+//			//}
+//			//else {
+//			//	for (int i = 0; i < (int)boxes.size(); i++) {
+//			//		auto box = boxes[i];
+//			//		if (i != 0) {
+//			//		// Update joint angles
+//			//		box->setJointAngle(theta_list(2 * step_i + i - 1), true);	
+//			//		cout << theta_list(step_i) << endl;
+//			//		}
+//			//	}
+//			//}
+//		}
+//		else {
+//			// Maximal Coordinate
+//			vector<double> tmp = solver->solve(&y[0], &yp[0], (int)12 * (boxes.size() - 1), t, t + h);
+//			y.clear();
+//
+//			for (int i = 0; i < (int)12 * (boxes.size() - 1); i++) {
+//				y.push_back(tmp[i]);
+//				//cout << tmp[i] << endl;
+//			}
+//
+//			Vector6d e1, e2, phi1, phi2;
+//			// Only need twist to update boxes
+//			
+//			for (int i = 12; i < 18; i++) {
+//				phi1(i - 12) = y[i];
+//			}
+//			for (int i = 18; i < 24; i++) {
+//				phi2(i - 18) = y[i];
+//			}
+//
+//			// Update twists
+//			for (int i = 0; i < (int)boxes.size(); i++) {
+//				// Update E
+//				boxes[i]->step(h);
+//			}
+//			boxes[1]->setTwist(phi1);
+//			boxes[2]->setTwist(phi2);
+//			
+//			Matrix4d E1 = boxes[1]->getE();
+//			Matrix4d E2 = boxes[2]->getE();
+//			e1 = Rigid::unbracket6(E1.log());
+//			e2 = Rigid::unbracket6(E2.log());
+//
+//			for (int i = 0; i < 6; i++) {
+//				y[i] = e1(i);
+//				y[6 + i] = e2(i);
+//			}
+//			//cout << "phi2:" << endl << phi2 << endl;
+//		}		
+//	}
+//	else if (solver->time_integrator == SYMPLECTIC) {
+//		solver->step(h);
+//		for (int i = 0; i < (int)boxes.size(); ++i) {
+//			boxes[i]->step(h);
+//			
+//			if (i != 0) {
+//				this->phi.segment<6>(6 * (i - 1)) = boxes[i]->getTwist();
+//				//cout << boxes[i]->getP()(1) << endl;
+//
+//			}
+//		}
+//		MatrixXd jj = solver->getJ_twist_thetadot();
+//		///cout << jj << endl;
+//	}
+//
+	if (time_integrator == SYMPLECTIC) {
+		symplectic_solver->step(h);
 		for (int i = 0; i < (int)boxes.size(); ++i) {
 			boxes[i]->step(h);
-			
+
 			if (i != 0) {
 				this->phi.segment<6>(6 * (i - 1)) = boxes[i]->getTwist();
-				//cout << boxes[i]->getP()(1) << endl;
-
 			}
 		}
-		MatrixXd jj = solver->getJ_twist_thetadot();
-		///cout << jj << endl;
+		MatrixXd jj = symplectic_solver->getJ_twist_thetadot();
 	}
+	else if (time_integrator == RKF45) {
+		// nothing
+
+	}else{
+		// nothing
+	}
+
 
 	t += h;
 	step_i += 1;

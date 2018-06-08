@@ -1,6 +1,6 @@
 #pragma once
-#ifndef __Spring__
-#define __Spring__
+#ifndef MUSCLEMASS_SRC_SPRING_H_
+#define MUSCLEMASS_SRC_SPRING_H_
 
 #include <memory>
 
@@ -32,4 +32,4 @@ public:
 	
 };
 
-#endif
+#endif // MUSCLEMASS_SRC_SPRING_H_

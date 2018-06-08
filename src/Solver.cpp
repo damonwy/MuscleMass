@@ -24,7 +24,8 @@ boxes(_boxes),
 springs(_springs),
 time_integrator(_time_integrator),
 isReduced(_isReduced),
-epsilon(1e-8)
+epsilon(1e-8),
+grav(0.0, -9.8, 0.0)
 {
 
 	if (isReduced) {
@@ -121,6 +122,9 @@ void Solver::dynamics(double t, double y[], double yp[])
 		MatrixXd M_s;
 		M_s.resize(num_joints, num_joints);
 		M_s.setZero(); 
+		double V_s = 0.0; // potential energy of spring
+		double K_s = 0.0; // kinetic energy of spring
+
 		for (int i = 0; i < (int)springs.size(); ++i) {
 			MatrixXd J_s;
 			J_s.resize(3 * n_samples, num_joints);
@@ -158,22 +162,29 @@ void Solver::dynamics(double t, double y[], double yp[])
 			// Sum up the inertia matrix of all the sample points
 			for (int ii = 0; ii < n_samples; ++ii) {
 				MatrixXd J_ii = J_s.block(3 * ii, 0, 3, num_joints);
+				// add gravtiy force for each sample
+				VectorXd f_ii = J_ii.transpose() * dm * grav; 
+				b.segment(6, num_joints) += f_ii;
 				MatrixXd M_ii = J_ii.transpose() * J_ii * dm;
-				cout << M_ii << endl;
+				
 				M_s += M_ii;
+			
 			}
 		}
+
+		// Compute the inertia matrix of wrapCylinder using finite difference 
 
 		// Update M matrix here..
 		M.block(6, 6 , num_joints, num_joints) += M_s;
 
 		A = JJ.transpose() * M * JJ; 
-
+		//cout << J << endl << endl;
 		// Don't use the first rigid body because it has no constraint so it will affect the result of thetaddot
 		x.segment(6, num_joints) = A.ldlt().solve(b.segment(6, num_joints));	// thetaddot
 
 		for (int i = 0; i < num_joints; i++) {
-			yp[num_joints + i] = x(6 + i);		
+			yp[num_joints + i] = x(6 + i);
+			//cout << x(6 + i) << endl;
 		}
 	}
 	else {
@@ -240,17 +251,10 @@ void Solver::dynamics(double t, double y[], double yp[])
 				j++;
 			}
 		}
-		//cout << "A" << endl<< A << endl;
-		mat_to_file(A, "A");
-		vec_to_file(b, "b");
-
+	
 		x = A.ldlt().solve(b);
-		//cout << "b" << endl << b << endl;
-
-		//cout << "x" << endl << x << endl << endl;
-		vec_to_file(x, "x");
+	
 		for (int i = 0; i < 6 * (boxes.size() - 1); i++) {
-			
 			yp[6 * (boxes.size() - 1) + i] = x(6 + i);
 		}
 
@@ -414,7 +418,6 @@ void Solver::step(double h) {
 			if (i != 0) {
 				// Update joint angles
 				box->setRotationAngle(h * x(5 + i)); 	
-				//cout << x(5 + i) << endl;
 				// Don't forget to update twists as well, we will use it to compute forces
 				box->setTwist(phi.segment<6>(6 * i));	
 			}

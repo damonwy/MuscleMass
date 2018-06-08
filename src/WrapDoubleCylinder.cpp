@@ -305,6 +305,13 @@ void WrapDoubleCylinder::step() {
 
 	if (this->status == wrap) {
 		this->arc_points = getPoints(this->num_points);
+		// for heon 
+		/*cout << "P:" << endl<< P->x << endl << endl;
+		cout << "U:" << endl << U->x << endl << endl;
+		cout << "V:" << endl << V->x << endl << endl;
+		cout << "S:" << endl << S->x << endl << endl;
+		cout << "zu:" << endl << z_U->dir << endl << endl;
+		cout << "zv:" << endl << z_V->dir << endl << endl;*/
 	}
 }
 

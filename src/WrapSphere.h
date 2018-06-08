@@ -1,5 +1,6 @@
-#ifndef WrapSphere_H
-#define WrapSphere_H
+#pragma once
+#ifndef MUSCLEMASS_SRC_WRAPSPHERE_H_
+#define MUSCLEMASS_SRC_WRAPSPHERE_H_
 
 /*
 * WrapSphere.hpp
@@ -73,4 +74,4 @@ public:
 
 };
 
-#endif
+#endif //MUSCLEMASS_SRC_WRAPSPHERE_H_

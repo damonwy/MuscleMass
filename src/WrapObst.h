@@ -1,5 +1,6 @@
-#ifndef WrapObst_H
-#define WrapObst_H
+#pragma once
+#ifndef MUSCLEMASS_SRC_WRAPOBST_H_
+#define MUSCLEMASS_SRC_WRAPOBST_H_
 
 #include <Eigen/Dense>
 
@@ -89,4 +90,4 @@ public:
 
 };
 
-#endif
+#endif // MUSCLEMASS_SRC_WRAPOBST_H_

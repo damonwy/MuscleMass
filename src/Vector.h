@@ -1,5 +1,8 @@
 #pragma once
 
+#ifndef MUSCLEMASS_SRC_VECTOR_H_
+#define MUSCLEMASS_SRC_VECTOR_H_
+
 #include <vector>
 #include <memory>
 
@@ -31,3 +34,4 @@ private:
 	std::shared_ptr<Particle> p;	// starting point
 };
 
+#endif // MUSCLEMASS_SRC_VECTOR_H_
