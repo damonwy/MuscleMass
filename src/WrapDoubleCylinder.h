@@ -43,6 +43,10 @@ private:
 		radius_U,     // U Cylinder Radius
 		radius_V;     // V Cylinder Radius
 
+	Status
+		status_U,     // U Wrapping Status
+		status_V;     // V Wrapping Status
+
 	std::shared_ptr<Particle> U;	// U Cylinder Origin
 	Eigen::Matrix4d E_W_U;			// Where current transform is wrt world(updated)
 	Eigen::Matrix4d E_P_U;			// Where the local frame is wrt parent(fixed)
@@ -101,6 +105,16 @@ public:
 
 	using WrapObst::getPoints;
 	Eigen::MatrixXd getPoints(int num_points);
+
+	Status get_status_u() const
+	{
+		return status_U;
+	}
+	
+	Status get_status_v() const
+	{
+		return status_V;
+	}
 
 	void step();
 	void draw(std::shared_ptr<MatrixStack> MV, const std::shared_ptr<Program> prog, const std::shared_ptr<Program> prog2, std::shared_ptr<MatrixStack> P) const;

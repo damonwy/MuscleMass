@@ -27,6 +27,9 @@ void WrapSphere::compute()
 	OP = OP / OP.norm();
 	Eigen::Vector3d N = OP.cross(OS);
 	N = N / N.norm();
+	if (N.dot(Eigen::Vector3d(0.0, 0.0, 1.0)) < 0) {
+		N = -N;
+	}
 
 	this->M << OS.transpose(), N.cross(OS).transpose(), N.transpose();
 	//std::cout << this->M << std::endl;
@@ -38,6 +41,7 @@ void WrapSphere::compute()
 	double denom_t = s(0)*s(0) + s(1)*s(1);
 	double R = this->radius;
 
+	this->status = wrap;
 	if ((denom_q - R*R < 0.0) || (denom_t - R*R < 0.0))
 	{
 		this->status = inside_radius;
@@ -59,7 +63,7 @@ void WrapSphere::compute()
 		this->status = no_wrap;
 	}
 
-	this->status = wrap;
+	
 	this->point_q = q;
 	this->point_t = t;
 
@@ -107,6 +111,10 @@ Eigen::MatrixXd WrapSphere::getPoints(int num_points)
 	for (double i = theta_s; i <= theta_e + 0.001;
 		i += (theta_e - theta_s) / num_points)
 	{
+		if (col == num_points + 1) {
+			break;
+		}
+
 		Eigen::Vector3d point = this->radius * this->M.transpose() *
 			Eigen::Vector3d(cos(i), sin(i), 0.0) + this->point_O;
 		points.col(col++) = point;
