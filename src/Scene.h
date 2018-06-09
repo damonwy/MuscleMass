@@ -39,6 +39,8 @@ public:
 	void tare();
 	void reset();
 	void step();
+	std::shared_ptr<Rigid> addBox(nlohmann::json R, nlohmann::json p, nlohmann::json dimension, nlohmann::json scale, nlohmann::json mass, const std::shared_ptr<Shape> shape, nlohmann::json isReduced, int id, std::shared_ptr<Rigid> parent = nullptr);
+	std::shared_ptr<Joint> addJoint(std::shared_ptr<Rigid> parent, std::shared_ptr<Rigid> child, nlohmann::json jE_P_J, nlohmann::json jmin_theta, nlohmann::json jmax_theta);
 	
 	void draw(std::shared_ptr<MatrixStack> MV, const std::shared_ptr<Program> prog, const std::shared_ptr<Program> prog2, std::shared_ptr<MatrixStack> P) const;
 	void computeEnergy();

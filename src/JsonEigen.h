@@ -13,9 +13,13 @@ namespace Eigen {
 
 	void to_json(json &j, const Matrix3d &m);
 
+	void to_json(json &j, const Matrix4d &m4);
+
 	void from_json(const json &j, Vector3d &v);
 
 	void from_json(const json &j, Matrix3d &m);
+
+	void from_json(const json &j, Matrix4d &m4);
 }
 
 #endif

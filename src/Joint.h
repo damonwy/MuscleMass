@@ -36,7 +36,7 @@ public:
 
 	void reset();
 	Joint();
-	Joint(Eigen::Matrix4d _E_P_J, Eigen::Matrix4d _E_C_J, double _theta, double _min_theta, double _max_theta);
+	Joint(Eigen::Matrix4d _E_P_J, Eigen::Matrix4d _E_C_J, double _min_theta, double _max_theta);
 
 	~Joint();
 };
