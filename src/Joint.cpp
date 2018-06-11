@@ -20,7 +20,6 @@ Joint::Joint(Matrix4d _E_P_J, Matrix4d _E_C_J, double _min_theta, double _max_th
 
 }
 
-
 void Joint::reset() {
 	E_C_J = E_C_J_0;
 	E_P_J = E_P_J_0;

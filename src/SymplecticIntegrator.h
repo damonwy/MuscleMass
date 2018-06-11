@@ -11,10 +11,11 @@
 class Rigid;
 class Spring;
 class Particle;
+class Joint;
 
 class SymplecticIntegrator {
 public:
-	SymplecticIntegrator(std::vector< std::shared_ptr<Rigid> > _boxes, std::vector< std::shared_ptr<Spring> > _springs, bool _isReduced);
+	SymplecticIntegrator(std::vector< std::shared_ptr<Rigid> > _boxes, std::vector< std::shared_ptr<Joint>> _joints, std::vector< std::shared_ptr<Spring> > _springs, bool _isReduced);
 	void step(double h);
 	Eigen::MatrixXd getJ_twist_thetadot();
 	virtual ~SymplecticIntegrator();
@@ -26,7 +27,7 @@ public:
 private:
 	std::vector< std::shared_ptr<Rigid> > boxes;
 	std::vector< std::shared_ptr<Spring> > springs;
-
+	std::vector< std::shared_ptr<Joint> > joints;
 	Eigen::MatrixXd A;
 	Eigen::MatrixXd M;
 	Eigen::MatrixXd J;

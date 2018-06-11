@@ -6,6 +6,7 @@
 #include "Spring.h"
 #include "Particle.h"
 #include "QuadProgMosek.h"
+#include "Scene.h"
 
 #include <iostream>
 #include <iomanip>
@@ -21,12 +22,13 @@ using namespace Eigen;
 #include <unsupported/Eigen/MatrixFunctions> // TODO: avoid using this later, write a func instead
 double inf = numeric_limits<double>::infinity();
 
-SymplecticIntegrator::SymplecticIntegrator(vector< shared_ptr<Rigid> > _boxes, vector< shared_ptr<Spring> > _springs, bool _isReduced):
+SymplecticIntegrator::SymplecticIntegrator(vector< shared_ptr<Rigid> > _boxes, vector< shared_ptr<Joint>> _joints, vector< shared_ptr<Spring> > _springs, bool _isReduced):
 		num_joints(_boxes.size() - 1),
 		boxes(_boxes),
+		joints(_joints),
 		springs(_springs),
 		isReduced(_isReduced),
-		epsilon(1e-8),
+		epsilon(1e-5),
 		grav(0.0, -9.8, 0.0)
 {
 
@@ -120,14 +122,83 @@ void SymplecticIntegrator::step(double h) {
 		A = J.transpose() * M * J;
 		b = J.transpose() * f;
 
-		//x = A.ldlt().solve(b);
+		// Compute the inertia matrix of spring using finite difference 
+		int n_samples = 10;
+
+		VectorXd pert, current_angles;
+		pert.resize(num_joints);
+		current_angles = Scene::getCurrentJointAngles(joints);
+
+		for (int i = 0; i < (int)springs.size(); ++i) {
+			springs[i]->setPosBeforePert();
+		}
+
+		MatrixXd M_s;
+		M_s.resize(num_joints, num_joints);
+		M_s.setZero();
+
+		double V_s = 0.0; // potential energy of spring
+		double K_s = 0.0; // kinetic energy of spring
+
+		for (int i = 0; i < (int)springs.size(); ++i) {
+			MatrixXd J_s;
+			J_s.resize(3 * n_samples, num_joints);
+			J_s.setZero();
+
+			double dm = springs[i]->mass / n_samples;
+			pert = current_angles;
+			// For each theta add a relative small perturbation
+
+			// Construct Material Jacobian Matrix of all the sample points
+			for (int ii = 0; ii < num_joints; ++ii) {
+				pert(ii) += epsilon;
+
+				// Compute new configuration
+				for (int iii = 0; iii < (int)boxes.size(); ++iii) {
+					auto box = boxes[iii];
+					if (iii != 0) {
+						box->setJointAngle(pert(iii - 1), false);
+					}
+				}
+
+				for (int iii = 0; iii < n_samples; ++iii) {
+					Vector3d p_nopert;
+					double s = iii / n_samples;
+					p_nopert = (1 - s)*springs[i]->p0_b + s*springs[i]->p1_b;
+
+					Vector3d p_pert;
+					p_pert = (1 - s)*springs[i]->p0->x_temp + s*springs[i]->p1->x_temp;
+
+					// Save to J_s
+					J_s.block(3 * iii, ii, 3, 1) = (p_pert - p_nopert) / epsilon;
+					
+				}
+			}
+			
+			// Sum up the inertia matrix of all the sample points
+			for (int ii = 0; ii < n_samples; ++ii) {
+				MatrixXd J_ii = J_s.block(3 * ii, 0, 3, num_joints);
+				// add gravtiy force for each sample
+				VectorXd f_ii = J_ii.transpose() * dm * grav;
+				
+				//b.segment(6, num_joints) += f_ii;
+				MatrixXd M_ii = J_ii.transpose() * J_ii * dm;
+				
+				//M_s += M_ii;
+			}
+		}
+
+		// Compute the inertia matrix of wrapCylinder using finite difference 
+
+		// Update M matrix here..
+		M.block(6, 6, num_joints, num_joints) += M_s;
+
 		x.setZero();
 		MatrixXd JJ = J.block(0, n - num_joints, m, num_joints);
 		A = JJ.transpose() * M * JJ;
 
 		x.segment(6, num_joints) = A.ldlt().solve(b.segment(6, num_joints));	// thetadot
-																				// Update Boxes
-
+		//cout << x.segment(6, num_joints) << endl;																
 		VectorXd phi = JJ * x.segment(6, num_joints);
 
 		// For QP

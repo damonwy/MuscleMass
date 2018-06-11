@@ -41,11 +41,14 @@ public:
 	void step();
 	std::shared_ptr<Rigid> addBox(nlohmann::json R, nlohmann::json p, nlohmann::json dimension, nlohmann::json scale, nlohmann::json mass, const std::shared_ptr<Shape> shape, nlohmann::json isReduced, int id, std::shared_ptr<Rigid> parent = nullptr);
 	std::shared_ptr<Joint> addJoint(std::shared_ptr<Rigid> parent, std::shared_ptr<Rigid> child, nlohmann::json jE_P_J, nlohmann::json jmin_theta, nlohmann::json jmax_theta);
+	std::shared_ptr<Spring> addSpring(nlohmann::json jp_x, std::shared_ptr<Rigid> p_parent, nlohmann::json js_x, std::shared_ptr<Rigid> s_parent, nlohmann::json jmass);
+	std::shared_ptr<WrapCylinder> addWrapCylinder(nlohmann::json jp_x, std::shared_ptr<Rigid> p_parent, nlohmann::json js_x, std::shared_ptr<Rigid> s_parent, nlohmann::json jo_x, std::shared_ptr<Rigid> o_parent, nlohmann::json jradius, nlohmann::json jzdir);
 	
 	void draw(std::shared_ptr<MatrixStack> MV, const std::shared_ptr<Program> prog, const std::shared_ptr<Program> prog2, std::shared_ptr<MatrixStack> P) const;
 	void computeEnergy();
 	void saveData(int num_steps);
 	double getTime() const { return t; }
+	static Eigen::VectorXd getCurrentJointAngles(std::vector<std::shared_ptr<Joint>> joints);
 	
 private:
 	double t;
@@ -76,6 +79,7 @@ private:
 	std::shared_ptr<Shape> cylinderShape;
 
 	std::vector< std::shared_ptr<Rigid> > boxes;
+	std::vector< std::shared_ptr<Joint> > joints;
 	std::shared_ptr<Solver> solver;
 	std::vector< std::shared_ptr<WrapDoubleCylinder> > wrap_doublecylinders;
 	std::vector< std::shared_ptr<Spring> > springs;

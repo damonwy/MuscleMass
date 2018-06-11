@@ -28,12 +28,11 @@ public:
 
 	void setE_C_J(Eigen::Matrix4d _E_C_J) { this->E_C_J = _E_C_J; }
 	void setE_P_J(Eigen::Matrix4d _E_P_J) { this->E_P_J = _E_P_J; }
-	void setDTheta(double _dtheta) { this->dtheta = _dtheta; this->theta += _dtheta; std::cout << theta << std:: endl; }
+	void setDTheta(double _dtheta) { this->dtheta = _dtheta; this->theta += _dtheta;}
 	void setTheta(double _theta) { this->theta = _theta; }
 	void setE_C_J_0(Eigen::Matrix4d _E_C_J_0) { this->E_C_J_0 = _E_C_J_0; }
 	void setE_P_J_0(Eigen::Matrix4d _E_P_J_0) { this->E_P_J_0 = _E_P_J_0; }
 	void setTheta_0(double _theta_0) { this->theta_0 = _theta_0; }
-
 	void reset();
 	Joint();
 	Joint(Eigen::Matrix4d _E_P_J, Eigen::Matrix4d _E_C_J, double _min_theta, double _max_theta);

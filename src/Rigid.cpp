@@ -60,8 +60,6 @@ void Rigid::step(double h) {
 		// Use reduced positions
 		if (i != 0) {
 			Matrix4d E_J_C = joint->getE_C_J().inverse();
-			
-
 			double dtheta = joint->getDTheta();
 			
 			Matrix4d R;
@@ -104,12 +102,12 @@ void Rigid::setJointAngle(double _theta, bool isDrawing) {
 		if (i != 0) {
 			Matrix4d E_J_C = joint->getE_C_J().inverse();
 
-			double dtheta = joint->getDTheta();
+			double theta = joint->getTheta();
 
 			Matrix4d R;
 			R.setIdentity();
-			R.block<2, 2>(0, 0) << cos(dtheta), -sin(dtheta),
-				sin(dtheta), cos(dtheta);
+			R.block<2, 2>(0, 0) << cos(theta), -sin(theta),
+				sin(theta), cos(theta);
 
 			Matrix4d E_P_J = joint->getE_P_J();
 			Matrix4d E_W_P = parent->getEtemp();
@@ -206,7 +204,6 @@ void Rigid::draw(shared_ptr<MatrixStack> MV, const shared_ptr<Program> prog, con
 			spheres[i]->draw(MV, prog, prog2, P);
 		}
 	}
-
 
 	if (isCylinder) {
 		for (int i = 0; i < (int)cylinders.size(); i++) {
