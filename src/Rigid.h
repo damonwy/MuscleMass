@@ -51,6 +51,7 @@ public:
 	void setE(Eigen::Matrix4d E) { this->E_W_0 = E; }
 	void setJoint(std::shared_ptr<Joint> _joint) { this->joint = _joint; }
 	void setRotationAngle(double _dtheta) { this->joint->setDTheta(_dtheta); }
+	void setThetadot(double _thetadot) { this->joint->setThetadot(_thetadot); }
 	void setAngle(double _theta) { this->joint->setTheta(_theta); }
 
 	void addPoint(std::shared_ptr<Particle> _point) { this->points.push_back(_point); }
@@ -60,11 +61,13 @@ public:
 	void addDoubleCylinder(std::shared_ptr<WrapDoubleCylinder> _double_cylinders) { this->double_cylinders.push_back(_double_cylinders); } 
 	
 	void setJointAngle(double _theta, bool isDrawing);
+
 	
 	void updateCylinders();
 	void updateDoubleCylinders();
 	void updateSpheres();
 	void updatePoints();
+	void updateTempPoints();
 
 	// get
 	Eigen::Matrix4d getE() const { return this->E_W_0; }
@@ -79,6 +82,7 @@ public:
 	
 	std::shared_ptr<Rigid> getParent() const { return this->parent; }
 	std::shared_ptr<Joint> getJoint() const { return this->joint; }
+	std::vector<std::shared_ptr<Particle>> getPoints() const { return this->points; }
 	int getIndex() const{ return this->i; }
 
 	static Eigen::Matrix4d inverse(const Eigen::Matrix4d &E);

@@ -1,3 +1,11 @@
+#define GLEW_STATIC
+#include <GL/glew.h>
+#include <GLFW/glfw3.h>
+
+#define GLM_FORCE_RADIANS
+#include <glm/glm.hpp>
+#include <glm/gtc/type_ptr.hpp>
+
 #include "SymplecticIntegrator.h"
 
 #include "Rigid.h"
@@ -7,6 +15,8 @@
 #include "Particle.h"
 #include "QuadProgMosek.h"
 #include "Scene.h"
+#include "Program.h"
+#include "MatrixStack.h"
 
 #include <iostream>
 #include <iomanip>
@@ -28,7 +38,7 @@ SymplecticIntegrator::SymplecticIntegrator(vector< shared_ptr<Rigid> > _boxes, v
 		joints(_joints),
 		springs(_springs),
 		isReduced(_isReduced),
-		epsilon(1e-5),
+		epsilon(1e-6),
 		grav(0.0, -9.8, 0.0)
 {
 
@@ -128,6 +138,7 @@ void SymplecticIntegrator::step(double h) {
 		VectorXd pert, current_angles;
 		pert.resize(num_joints);
 		current_angles = Scene::getCurrentJointAngles(joints);
+		//current_thetadots = Scene::getCurrentThetadots(joints);
 
 		for (int i = 0; i < (int)springs.size(); ++i) {
 			springs[i]->setPosBeforePert();
@@ -146,12 +157,29 @@ void SymplecticIntegrator::step(double h) {
 			J_s.setZero();
 
 			double dm = springs[i]->mass / n_samples;
-			pert = current_angles;
-			// For each theta add a relative small perturbation
-
+						
+			samples.clear();
 			// Construct Material Jacobian Matrix of all the sample points
 			for (int ii = 0; ii < num_joints; ++ii) {
+				
+				// For each theta add a relative small perturbation
+				pert = current_angles;	
+				//pert = current_thetadots;
 				pert(ii) += epsilon;
+				//VectorXd phi_pert;
+				//phi_pert.resize(num_joints * 6);
+				//phi_pert = J.block(6, 6, 6 * num_joints, num_joints) * pert; // convert to twist
+
+				// Compute new configuration
+				for (int iii = 0; iii < (int)boxes.size(); ++iii) {
+					auto box = boxes[iii];
+					if (iii != 0) {
+						//Matrix4d Etemp = Rigid::bracket6(phi_pert.segment<6>((iii - 1) * 6)).exp();
+						//box->setEtemp(Etemp);
+						// Update temporary points position
+						//box->updateTempPoints();
+					}
+				}
 
 				// Compute new configuration
 				for (int iii = 0; iii < (int)boxes.size(); ++iii) {
@@ -163,40 +191,47 @@ void SymplecticIntegrator::step(double h) {
 
 				for (int iii = 0; iii < n_samples; ++iii) {
 					Vector3d p_nopert;
-					double s = iii / n_samples;
+					double s = iii / double(n_samples);
 					p_nopert = (1 - s)*springs[i]->p0_b + s*springs[i]->p1_b;
-
+					
 					Vector3d p_pert;
 					p_pert = (1 - s)*springs[i]->p0->x_temp + s*springs[i]->p1->x_temp;
 
+					// Draw sample points under perturbations
+					auto sample = make_shared<Particle>();
+					sample->x = p_pert;
+					samples.push_back(sample);
+
 					// Save to J_s
 					J_s.block(3 * iii, ii, 3, 1) = (p_pert - p_nopert) / epsilon;
-					
+					//cout << p_pert  << endl;
 				}
 			}
 			
 			// Sum up the inertia matrix of all the sample points
 			for (int ii = 0; ii < n_samples; ++ii) {
 				MatrixXd J_ii = J_s.block(3 * ii, 0, 3, num_joints);
+				//cout << J_ii << endl;
 				// add gravtiy force for each sample
 				VectorXd f_ii = J_ii.transpose() * dm * grav;
 				
-				//b.segment(6, num_joints) += f_ii;
+				b.segment(6, num_joints) += f_ii;
 				MatrixXd M_ii = J_ii.transpose() * J_ii * dm;
 				
-				//M_s += M_ii;
+				M_s += M_ii;
 			}
 		}
-
+		//cout << M_s << endl;
 		// Compute the inertia matrix of wrapCylinder using finite difference 
 
 		// Update M matrix here..
-		M.block(6, 6, num_joints, num_joints) += M_s;
+		//M.block(6, 6, num_joints, num_joints) += M_s;
 
 		x.setZero();
 		MatrixXd JJ = J.block(0, n - num_joints, m, num_joints);
 		A = JJ.transpose() * M * JJ;
-
+		A += M_s;
+		//cout << A << endl; //cout << b << endl;
 		x.segment(6, num_joints) = A.ldlt().solve(b.segment(6, num_joints));	// thetadot
 		//cout << x.segment(6, num_joints) << endl;																
 		VectorXd phi = JJ * x.segment(6, num_joints);
@@ -264,6 +299,7 @@ void SymplecticIntegrator::step(double h) {
 				auto box = boxes[i];
 				// Update joint angles
 				box->setRotationAngle(h * sol(i - 1));
+				box->setThetadot(sol(i - 1));
 				// Don't forget to update twists as well, we will use it to compute forces
 				box->setTwist(phi.segment<6>(6 * i));			
 			}
@@ -276,6 +312,7 @@ void SymplecticIntegrator::step(double h) {
 				if (i != 0) {
 					// Update joint angles
 					box->setRotationAngle(h * x(5 + i));
+					box->setThetadot(x(5 + i));
 					// Don't forget to update twists as well, we will use it to compute forces
 					box->setTwist(phi.segment<6>(6 * i));
 				}
@@ -331,6 +368,29 @@ void SymplecticIntegrator::step(double h) {
 		}
 	}
 }
+
+
+void SymplecticIntegrator::draw(shared_ptr<MatrixStack> MV, const shared_ptr<Program> prog, shared_ptr<MatrixStack> P) const
+{	
+	prog->bind();
+	glUniformMatrix4fv(prog->getUniform("P"), 1, GL_FALSE, glm::value_ptr(P->topMatrix()));
+	glUniformMatrix4fv(prog->getUniform("MV"), 1, GL_FALSE, glm::value_ptr(MV->topMatrix()));
+	MV->pushMatrix();
+	glUniformMatrix4fv(prog->getUniform("MV"), 1, GL_FALSE, glm::value_ptr(MV->topMatrix()));
+	glColor3f(1.0, 0.0, 0.0); // black
+	glPointSize(3.0);
+	glBegin(GL_POINTS);
+	for (int i = 0; i < (int)samples.size(); ++i) {
+		Vector3f p = samples[i]->x.cast<float>();
+		glVertex3f(p(0), p(1), p(2));
+	}
+	
+	glEnd();
+	MV->popMatrix();
+	prog->unbind();
+}
+
+
 
 SymplecticIntegrator::~SymplecticIntegrator() {
 

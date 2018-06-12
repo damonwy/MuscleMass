@@ -39,8 +39,8 @@ double Spring::computeLength() {
 }
 
 void Spring::setPosBeforePert() {
-	this->p0_b = p0->x_temp;
-	this->p1_b = p1->x_temp;
+	this->p0_b = p0->x;
+	this->p1_b = p1->x;
 }
 
 void Spring::draw(std::shared_ptr<MatrixStack> MV, const std::shared_ptr<Program> prog, const std::shared_ptr<Program> prog2, std::shared_ptr<MatrixStack> P) const {

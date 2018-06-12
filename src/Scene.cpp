@@ -386,6 +386,16 @@ VectorXd Scene::getCurrentJointAngles(vector<shared_ptr<Joint>> joints) {
 	return thetalist;
 }
 
+VectorXd Scene::getCurrentThetadots(vector<shared_ptr<Joint>> joints) {
+	VectorXd thetadotlist;
+	thetadotlist.resize((int)joints.size());
+	thetadotlist.setZero();
+	for (int i = 0; i < (int)joints.size(); ++i) {
+		thetadotlist(i) = joints[i]->getThetadot();
+	}
+	return thetadotlist;
+}
+
 void Scene::draw(shared_ptr<MatrixStack> MV, const shared_ptr<Program> prog, const shared_ptr<Program> prog2, shared_ptr<MatrixStack> P) const
 {
 	for (int i = 0; i < (int)boxes.size(); ++i) {
@@ -395,4 +405,6 @@ void Scene::draw(shared_ptr<MatrixStack> MV, const shared_ptr<Program> prog, con
 	for (int i = 0; i < (int)springs.size(); ++i) {
 		springs[i]->draw(MV, prog, prog2, P);
 	}
+
+	symplectic_solver->draw(MV, prog2, P);
 }

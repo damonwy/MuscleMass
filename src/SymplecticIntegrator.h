@@ -12,11 +12,14 @@ class Rigid;
 class Spring;
 class Particle;
 class Joint;
+class Program;
+class MatrixStack;
 
 class SymplecticIntegrator {
 public:
 	SymplecticIntegrator(std::vector< std::shared_ptr<Rigid> > _boxes, std::vector< std::shared_ptr<Joint>> _joints, std::vector< std::shared_ptr<Spring> > _springs, bool _isReduced);
 	void step(double h);
+	void draw(std::shared_ptr<MatrixStack> MV, const std::shared_ptr<Program> prog, std::shared_ptr<MatrixStack> P) const;
 	Eigen::MatrixXd getJ_twist_thetadot();
 	virtual ~SymplecticIntegrator();
 
@@ -37,6 +40,7 @@ private:
 	double epsilon;
 	bool isReduced;
 	Eigen::Vector3d grav;
+	std::vector< std::shared_ptr<Particle> > samples;
 
 };
 

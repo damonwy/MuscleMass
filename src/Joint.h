@@ -13,6 +13,8 @@ private:
 	double theta;			// Current joint angle
 	double max_theta;		
 	double min_theta;
+	double thetadot;		// velocity
+	double thetaddot;		// acceleration
 
 	Eigen::Matrix4d E_P_J_0;
 	Eigen::Matrix4d E_C_J_0;
@@ -23,6 +25,7 @@ public:
 	Eigen::Matrix4d getE_C_J() const { return this->E_C_J; }
 	double getTheta() const { return this->theta; }
 	double getDTheta() const { return this->dtheta; }
+	double getThetadot() const { return this->thetadot; }
 	double getMaxTheta() const { return this->max_theta; }
 	double getMinTheta() const { return this->min_theta; }
 
@@ -33,6 +36,8 @@ public:
 	void setE_C_J_0(Eigen::Matrix4d _E_C_J_0) { this->E_C_J_0 = _E_C_J_0; }
 	void setE_P_J_0(Eigen::Matrix4d _E_P_J_0) { this->E_P_J_0 = _E_P_J_0; }
 	void setTheta_0(double _theta_0) { this->theta_0 = _theta_0; }
+	void setThetadot(double _thetadot) { this->thetadot = _thetadot; }
+	void setThetaddot(double _thetaddot) { this->thetaddot = _thetaddot; }
 	void reset();
 	Joint();
 	Joint(Eigen::Matrix4d _E_P_J, Eigen::Matrix4d _E_C_J, double _min_theta, double _max_theta);

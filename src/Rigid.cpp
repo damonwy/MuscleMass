@@ -114,9 +114,7 @@ void Rigid::setJointAngle(double _theta, bool isDrawing) {
 			Matrix4d E_W_C = E_W_P * E_P_J * R * E_J_C;
 			this->E_W_0_temp = E_W_C;
 			// Update temporary points position
-			for (int i = 0; i < (int)points.size(); i++) {
-				points[i]->updateTemp(this->E_W_0_temp);
-			}
+			updateTempPoints();
 
 			if (isDrawing) {
 				this->E_W_0 = E_W_0_temp;
@@ -142,6 +140,12 @@ void Rigid::updateCylinders() {
 			cylinders[i]->setE(E);
 			cylinders[i]->step();
 		}
+	}
+}
+
+void Rigid::updateTempPoints() {
+	for (int i = 0; i < (int)points.size(); i++) {
+		points[i]->updateTemp(this->E_W_0_temp);
 	}
 }
 
