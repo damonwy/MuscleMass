@@ -12,6 +12,7 @@
 #include "Shape.h"
 #include "Program.h"
 #include "MatrixStack.h"
+#include "Rigid.h"
 
 using namespace std;
 using namespace Eigen;

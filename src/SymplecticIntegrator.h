@@ -17,10 +17,12 @@ class MatrixStack;
 
 class SymplecticIntegrator {
 public:
-	SymplecticIntegrator(std::vector< std::shared_ptr<Rigid> > _boxes, std::vector< std::shared_ptr<Joint>> _joints, std::vector< std::shared_ptr<Spring> > _springs, bool _isReduced);
+	SymplecticIntegrator(std::vector< std::shared_ptr<Rigid> > _boxes, std::vector< std::shared_ptr<Joint>> _joints, std::vector< std::shared_ptr<Spring> > _springs, bool _isReduced, int _num_samples);
 	void step(double h);
 	void draw(std::shared_ptr<MatrixStack> MV, const std::shared_ptr<Program> prog, std::shared_ptr<MatrixStack> P) const;
 	Eigen::MatrixXd getJ_twist_thetadot();
+	double getSpringPotentialEnergy() const { return this->V_s; }
+	double getSpringKineticEnergy() const { return this->K_s; }
 	virtual ~SymplecticIntegrator();
 
 	double m;
@@ -33,6 +35,9 @@ private:
 	std::vector< std::shared_ptr<Joint> > joints;
 	Eigen::MatrixXd A;
 	Eigen::MatrixXd M;
+	Eigen::MatrixXd M_s;
+	double V_s;
+	double K_s;
 	Eigen::MatrixXd J;
 	Eigen::VectorXd x;
 	Eigen::VectorXd b;
@@ -41,7 +46,7 @@ private:
 	bool isReduced;
 	Eigen::Vector3d grav;
 	std::vector< std::shared_ptr<Particle> > samples;
-
+	int num_samples;	// The number of samples along the muscle lines
 };
 
 #endif // MUSLEMASS_SRC_SYMPLECTICINTEGRATOR

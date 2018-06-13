@@ -169,7 +169,7 @@ void Scene::load(const string &RESOURCE_DIR)
 	//box2->addSphere(wrap_sphere);
 
 	if (time_integrator == SYMPLECTIC) {
-		symplectic_solver = make_shared<SymplecticIntegrator>(boxes, joints, springs, js["isReduced"]);
+		symplectic_solver = make_shared<SymplecticIntegrator>(boxes, joints, springs, js["isReduced"], js["num_samples_on_muscle"]);
 	}
 	else if (time_integrator == RKF45) {
 		rkf45_solver = make_shared<RKF45Integrator>(boxes, springs, js["isReduced"]);
@@ -205,12 +205,14 @@ shared_ptr<Spring> Scene::addSpring(json jp_x, shared_ptr<Rigid> p_parent, json 
 	auto p = make_shared<Particle>(sphereShape);
 	from_json(jp_x, p->x0);
 	p->r = js["particle_r"];
+	p->setParent(p_parent);
 	p->update(p_parent->getE());
 	p_parent->addPoint(p);
 
 	auto s = make_shared<Particle>(sphereShape);
 	from_json(js_x, s->x0);
 	s->r = js["particle_r"];
+	s->setParent(s_parent);
 	s->update(s_parent->getE());
 	s_parent->addPoint(s);
 
@@ -227,12 +229,14 @@ shared_ptr<WrapCylinder> Scene::addWrapCylinder(json jp_x, shared_ptr<Rigid> p_p
 	auto wc_p = make_shared<Particle>(sphereShape);
 	from_json(jp_x, wc_p->x0);
 	wc_p->r = js["particle_r"];
+	wc_p->setParent(p_parent);
 	wc_p->update(p_parent->getE());
 	p_parent->addPoint(wc_p);
 
 	auto wc_s = make_shared<Particle>(sphereShape);
 	from_json(js_x, wc_s->x0);
 	wc_s->r = js["particle_r"];
+	wc_s->setParent(s_parent);
 	wc_s->update(s_parent->getE());
 	s_parent->addPoint(wc_s);
 
@@ -240,6 +244,7 @@ shared_ptr<WrapCylinder> Scene::addWrapCylinder(json jp_x, shared_ptr<Rigid> p_p
 	auto wc_o = make_shared<Particle>(sphereShape);
 	wc_o->x0 << cylinder_radius + o_parent->getDimension()(0), -0.5 * o_parent->getDimension()(1) + 1.0, 0.0;
 	wc_o->r = js["particle_r"];
+	wc_o->setParent(o_parent);
 	wc_o->update(o_parent->getE());
 	o_parent->addPoint(wc_o);
 
@@ -299,10 +304,10 @@ void Scene::step()
 			boxes[i]->step(h);
 
 			if (i != 0) {
-				this->phi.segment<6>(6 * (i - 1)) = boxes[i]->getTwist();
+				//this->phi.segment<6>(6 * (i - 1)) = boxes[i]->getTwist();
 			}
 		}
-		MatrixXd jj = symplectic_solver->getJ_twist_thetadot();
+		//MatrixXd jj = symplectic_solver->getJ_twist_thetadot();
 	}
 	else if (time_integrator == RKF45) {
 		// nothing
@@ -358,14 +363,19 @@ void Scene::computeEnergy() {
 	K = 0.0;
 	V = 0.0;
 
+	// Rigid Body:
 	for (int i = 0; i < (int)boxes.size(); ++i) {
 		double vi = boxes[i]->m * grav.transpose() * boxes[i]->getP();
-		//cout << "pos: " << boxes[i]->getP()(1) << endl;
 		V += vi;
+		
 		double ki = 0.5 * boxes[i]->getTwist().transpose() * boxes[i]->getMassMatrix() * boxes[i]->getTwist();
-		//cout << "twist: " << boxes[i]->getTwist() << endl;
 		K += ki;
-	}
+	}	
+
+	// Spring:
+	K += symplectic_solver->getSpringKineticEnergy();
+	V += symplectic_solver->getSpringPotentialEnergy();
+
 	if (step_i == 1) {
 		V0 = V;
 		K0 = K;
@@ -373,7 +383,6 @@ void Scene::computeEnergy() {
 	//cout << V0 - V << endl;
 	//cout << K - K0 << endl;
 	//cout << V0 - V + K - K0 << endl;
-
 }
 
 VectorXd Scene::getCurrentJointAngles(vector<shared_ptr<Joint>> joints) {
