@@ -61,7 +61,6 @@ public:
 	void addDoubleCylinder(std::shared_ptr<WrapDoubleCylinder> _double_cylinders) { this->double_cylinders.push_back(_double_cylinders); } 
 	
 	void setJointAngle(double _theta, bool isDrawing);
-
 	
 	void updateCylinders();
 	void updateDoubleCylinders();

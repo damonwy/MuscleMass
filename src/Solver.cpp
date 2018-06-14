@@ -116,7 +116,7 @@ void Solver::dynamics(double t, double y[], double yp[])
 		pert.resize(num_joints);
 
 		for (int i = 0; i < (int)springs.size(); ++i) {
-			springs[i]->setPosBeforePert();
+			//springs[i]->setPosBeforePert();
 		}
 
 		MatrixXd M_s;
@@ -149,7 +149,7 @@ void Solver::dynamics(double t, double y[], double yp[])
 				for (int iii = 0; iii < n_samples; ++iii) {
 					Vector3d p_nopert;
 					double s =  iii / n_samples;
-					p_nopert = (1 - s)*springs[i]->p0_b + s*springs[i]->p1_b;
+					//p_nopert = (1 - s)*springs[i]->p0_b + s*springs[i]->p1_b;
 
 					Vector3d p_pert;
 					p_pert = (1 - s)*springs[i]->p0->x_temp + s*springs[i]->p1->x_temp;

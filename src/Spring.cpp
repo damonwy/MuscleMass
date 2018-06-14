@@ -32,11 +32,9 @@ Spring::Spring(shared_ptr<Particle> p0, shared_ptr<Particle> p1, double _mass, i
 	Vector3d dx = x1 - x0;
 	this->L = dx.norm();
 	this->l = L;
-	this->p0_b = x0;
-	this->p1_b = x1;
 	this->phi_box.setZero();
-	assert(L > 0.0);
 
+	assert(L > 0.0);
 	box_id(0) = p0->getParent()->getIndex();
 	box_id(1) = p1->getParent()->getIndex();
 
@@ -67,11 +65,6 @@ double Spring::computeLength() {
 	return (p0->x - p1->x).norm();
 }
 
-void Spring::setPosBeforePert() {
-	this->p0_b = p0->x;
-	this->p1_b = p1->x;
-}
-
 void Spring::updateSamples() {
 
 	// Update the position
@@ -90,9 +83,9 @@ void Spring::updateSamples() {
 	phi_box.segment<6>(6) = b1->getTwist();
 
 	Vector6d pert;
+
 	// For each component of phi(i = 0, 1, 2..,11) add a relative small perturbation
 	for (int ii = 0; ii < 6; ++ii) {
-
 		// Change ii-th component
 		pert.setZero();
 		pert(ii) += epsilon;
@@ -109,15 +102,12 @@ void Spring::updateSamples() {
 			Vector3d p_nopert = sample->x;
 			Vector3d p_pert = (1 - s) * p0->getTempPos() + s * p1->x;
 			
-			// Save to J
 			Vector3d diff = (p_pert - sample->x) / epsilon;
 			sample->setJacobianMatrixCol(diff, ii);
-
 		}
 	}
 
 	for (int ii = 0; ii < 6; ++ii) {
-
 		// Change ii-th component
 		pert.setZero();
 		pert(ii) += epsilon;

@@ -22,7 +22,6 @@ using namespace std;
 using namespace Eigen;
 
 Rigid::Rigid() {
-
 }
 
 Rigid::Rigid(const shared_ptr<Shape> s, Matrix3d _R, Vector3d _p, Vector3d _dimension, double _r, double _m, bool _isReduced) :
@@ -81,7 +80,6 @@ void Rigid::step(double h) {
 	}
 
 	// Energy Update
-
 	this->V = this->m * grav.transpose() * this->getP();
 	this->K = 0.5 * this->twist.transpose() * mass_mat * this->twist;
 
@@ -94,8 +92,7 @@ void Rigid::step(double h) {
 	updateSpheres();
 	updateCylinders();
 	updateDoubleCylinders();
-	updatePoints();
-	
+	updatePoints();	
 }
 
 void Rigid::setJointAngle(double _theta, bool isDrawing) {

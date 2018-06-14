@@ -18,13 +18,8 @@ class Spring
 public:
 	Spring(std::shared_ptr<Particle> p0, std::shared_ptr<Particle> p1, double _mass, int num_samples, Eigen::Vector3d _grav, double _epsilon);
 	virtual ~Spring();
-	
 	void step();
 	void draw(std::shared_ptr<MatrixStack> MV, const std::shared_ptr<Program> prog, const std::shared_ptr<Program> prog2, std::shared_ptr<MatrixStack> P) const;
-	void setPosBeforePert(); // Save the postions of p0 and p1 before perturbation
-	Eigen::Vector3d getP0BeforePert() const { return this->p0_b; }
-	Eigen::Vector3d getP1BeforePert() const { return this->p1_b; }
-	
 	void setSamples(std::vector < std::shared_ptr<Particle> > _samples) { this->samples = _samples; }
 	void updateSamples();
 	
@@ -39,24 +34,20 @@ public:
 	static Eigen::MatrixXd computeMassMatrix(std::vector<std::shared_ptr<Spring> > springs, int num_boxes);
 	static Eigen::VectorXd computeGravity(std::vector<std::shared_ptr<Spring> > springs, int num_boxes);
 
-	Eigen::Vector2d box_id;
-
 	std::shared_ptr<Particle> p0;
 	std::shared_ptr<Particle> p1;
+
 	double E;	// stiffness
 	double L;	// initial length
 	double l;	// current length
 	double mass;
 	double epsilon;
-
-	Eigen::Vector3d p0_b; // the position of p0 before perturbation
-	Eigen::Vector3d p1_b; // the position of p1 before perturbation
+	double V;
+	double K;
 
 	std::vector<std::shared_ptr<Particle> > samples;	// sample points along the spring
 	Eigen::Vector3d grav;
-
-	double V;
-	double K;
+	Eigen::Vector2d box_id;
 	Vector12d phi_box;	
 };
 

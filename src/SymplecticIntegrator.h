@@ -21,7 +21,6 @@ public:
 	void step(double h);
 	void draw(std::shared_ptr<MatrixStack> MV, const std::shared_ptr<Program> prog, std::shared_ptr<MatrixStack> P) const;
 	Eigen::MatrixXd getJ_twist_thetadot();
-	void test(double h);
 	virtual ~SymplecticIntegrator();
 
 	double m;
@@ -34,9 +33,6 @@ private:
 	std::vector< std::shared_ptr<Joint> > joints;
 	Eigen::MatrixXd A;
 	Eigen::MatrixXd M;
-	Eigen::MatrixXd M_s;
-	double V_s;
-	double K_s;
 	Eigen::MatrixXd J;
 	Eigen::VectorXd x;
 	Eigen::VectorXd b;
