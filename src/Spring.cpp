@@ -13,12 +13,14 @@
 #include "Shape.h"
 #include "Program.h"
 #include "MatrixStack.h"
+#include "Rigid.h"
+#include <unsupported/Eigen/MatrixFunctions> // TODO: avoid using this later, write a func instead
 
 using namespace std;
 using namespace Eigen;
 
-Spring::Spring(shared_ptr<Particle> p0, shared_ptr<Particle> p1, double _mass) :
-	E(1.0), mass(_mass)
+Spring::Spring(shared_ptr<Particle> p0, shared_ptr<Particle> p1, double _mass, int num_samples, Vector3d _grav, double _epsilon) :
+	E(1.0), mass(_mass), grav(_grav), epsilon(_epsilon)
 {
 	assert(p0);
 	assert(p1);
@@ -28,10 +30,37 @@ Spring::Spring(shared_ptr<Particle> p0, shared_ptr<Particle> p1, double _mass) :
 	Vector3d x0 = p0->x;
 	Vector3d x1 = p1->x;
 	Vector3d dx = x1 - x0;
-	L = dx.norm();
+	this->L = dx.norm();
+	this->l = L;
 	this->p0_b = x0;
 	this->p1_b = x1;
+	this->phi_box.setZero();
 	assert(L > 0.0);
+
+	box_id(0) = p0->getParent()->getIndex();
+	box_id(1) = p1->getParent()->getIndex();
+
+	Matrix3x12d J;
+	J.setZero();
+	
+	double dm = this->mass / num_samples;
+
+	for (int i = 0; i < num_samples; ++i) {
+		auto sample = make_shared<Particle>();
+		double s = i / double(num_samples);
+		sample->s = s;
+		sample->x = (1 - s)*p0->x + s*p1->x;
+		sample->m = dm;
+		sample->setJacobianMatrix(J);
+		samples.push_back(sample);
+	}
+	step();
+}
+
+void Spring::step() {
+	this->l = computeLength();
+	updateSamples();	
+	computeEnergy();
 }
 
 double Spring::computeLength() {
@@ -42,6 +71,141 @@ void Spring::setPosBeforePert() {
 	this->p0_b = p0->x;
 	this->p1_b = p1->x;
 }
+
+void Spring::updateSamples() {
+
+	// Update the position
+	for (int i = 0; i < (int)this->samples.size(); ++i) {
+		auto sample = samples[i];
+		double s = sample->s;
+		sample->x = (1 - s)*p0->x + s*p1->x;
+		sample->clearJacobianMatrix();
+	}
+
+	// Update the Jacobian Matrices
+	auto b0 = p0->getParent();
+	auto b1 = p1->getParent();
+
+	phi_box.segment<6>(0) = b0->getTwist();
+	phi_box.segment<6>(6) = b1->getTwist();
+
+	Vector6d pert;
+	// For each component of phi(i = 0, 1, 2..,11) add a relative small perturbation
+	for (int ii = 0; ii < 6; ++ii) {
+
+		// Change ii-th component
+		pert.setZero();
+		pert(ii) += epsilon;
+
+		// Compute new configuration
+		Matrix4d E_pert = b0->getE() * Rigid::bracket6(pert).exp();
+		b0->setEtemp(E_pert);
+		b0->updateTempPoints();
+
+		for (int isample = 0; isample < (int)samples.size(); ++isample) {
+			auto sample = samples[isample];
+			double s = sample->s;
+
+			Vector3d p_nopert = sample->x;
+			Vector3d p_pert = (1 - s) * p0->getTempPos() + s * p1->x;
+			
+			// Save to J
+			Vector3d diff = (p_pert - sample->x) / epsilon;
+			sample->setJacobianMatrixCol(diff, ii);
+
+		}
+	}
+
+	for (int ii = 0; ii < 6; ++ii) {
+
+		// Change ii-th component
+		pert.setZero();
+		pert(ii) += epsilon;
+
+		// Compute new configuration
+		Matrix4d E_pert = b1->getE() * Rigid::bracket6(pert).exp();
+		b1->setEtemp(E_pert);
+		b1->updateTempPoints();
+
+		for (int isample = 0; isample < (int)samples.size(); ++isample) {
+			auto sample = samples[isample];
+			double s = sample->s;
+
+			Vector3d p_nopert = sample->x;
+			Vector3d p_pert = (1 - s) * p0->x + s * p1->getTempPos();
+
+			Vector3d diff = (p_pert - sample->x) / epsilon;
+			sample->setJacobianMatrixCol(diff, ii + 6);
+		}
+	}
+}
+
+void Spring::computeEnergy() {
+	this->V = 0.0;
+	this->K = 0.0;
+
+	for (int isample = 0; isample < (int)samples.size(); ++isample) {
+		auto sample = samples[isample];
+		// Update the energy
+		double V_ii = sample->computePotentialEnergy(grav);
+		double K_ii = sample->computeKineticEnergy(phi_box);
+
+		this->V += V_ii;
+		this->K += K_ii;
+	}
+}
+
+MatrixXd Spring::computeMassMatrix(vector<shared_ptr<Spring> > springs, int num_boxes) {
+	int n = 6 * num_boxes;
+	MatrixXd M_s(n, n);
+	M_s.setZero();
+
+	for (int i = 0; i < (int)springs.size(); ++i) {
+		auto spring = springs[i];
+		auto samples = spring->getSamples();
+		Vector12d phi = spring->getBoxTwists();
+		Vector2d box_id = spring->getBoxID();
+
+		// Sum up the inertia matrix of all the sample points
+		for (int isample = 0; isample < (int)samples.size(); ++isample) {
+			auto sample = samples[isample];
+			Matrix3x12d J_ii = sample->getJacobianMatrix();
+			Matrix12d M_ii = J_ii.transpose() * J_ii * sample->m;
+
+			// Fill in Mass matrix
+			M_s.block<6, 6>(6 * box_id(0), 6 * box_id(0)) += M_ii.block<6, 6>(0, 0);
+			M_s.block<6, 6>(6 * box_id(0), 6 * box_id(1)) += M_ii.block<6, 6>(0, 6);
+			M_s.block<6, 6>(6 * box_id(1), 6 * box_id(0)) += M_ii.block<6, 6>(6, 0);
+			M_s.block<6, 6>(6 * box_id(1), 6 * box_id(1)) += M_ii.block<6, 6>(6, 6);
+		}
+	}
+	return M_s;
+}
+
+VectorXd Spring::computeGravity(vector<shared_ptr<Spring> > springs, int num_boxes) {
+	int n = 6 * num_boxes;
+	VectorXd b_s(n);
+	b_s.setZero();
+
+	for (int i = 0; i < (int)springs.size(); ++i) {
+		auto spring = springs[i];
+		auto samples = spring->getSamples();
+		Vector2d box_id = spring->getBoxID();
+		
+		for (int isample = 0; isample < (int)samples.size(); ++isample) {
+			auto sample = samples[isample];
+			Matrix3x12d J_ii = sample->getJacobianMatrix();
+		
+			// Add gravtiy force for each sample to b vector
+			Vector12d f_ii = J_ii.transpose() * sample->m * spring->grav;
+
+			b_s.segment<6>(6 * box_id(0)) += f_ii.segment<6>(0);
+			b_s.segment<6>(6 * box_id(1)) += f_ii.segment<6>(6);
+		}
+	}
+	return b_s;
+ }
+
 
 void Spring::draw(std::shared_ptr<MatrixStack> MV, const std::shared_ptr<Program> prog, const std::shared_ptr<Program> prog2, std::shared_ptr<MatrixStack> P) const {
 

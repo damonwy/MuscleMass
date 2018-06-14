@@ -76,6 +76,18 @@ void Particle::updateTemp(Matrix4d E) {
 	this->x_temp = pos.segment<3>(0);
 }
 
+double Particle::computePotentialEnergy(Vector3d grav) {
+	this->V = this->m * grav.transpose() * this->x;
+	return this->V;
+}
+
+double Particle::computeKineticEnergy(VectorXd phi) {
+	//assert(this->J.cols == phi.size());
+	this->v = this->J * phi;
+	this->K =0.5 * this->m * this->v.transpose() * this->v;
+	return this->K;
+}
+
 void Particle::draw(shared_ptr<MatrixStack> MV, const shared_ptr<Program> prog) const
 {
 	if(sphere) {

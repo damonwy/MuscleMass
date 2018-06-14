@@ -75,6 +75,8 @@ public:
 	Eigen::Matrix3d getR() const { return this->E_W_0.block<3, 3>(0, 0); }
 	Eigen::Matrix4d getEtemp() const { return this->E_W_0_temp; }
 	Eigen::Vector3d getDimension() const { return this->dimension; }
+	double getPotentialEnergy() const { return this->V; }
+	double getKineticEnergy() const { return this->K; }
 
 	Vector6d getTwist() const { return this->twist; }
 	Vector6d getForce() const { return this->force; }
@@ -122,6 +124,9 @@ private:
 	Matrix6d mass_mat;
 	Vector6d twist;
 	Vector6d force;
+
+	double V;
+	double K;
 
 	int i;  // index
 };

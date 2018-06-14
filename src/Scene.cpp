@@ -218,7 +218,7 @@ shared_ptr<Spring> Scene::addSpring(json jp_x, shared_ptr<Rigid> p_parent, json 
 
 	// Init Spring
 	double spring_mass = jmass;
-	auto spring = make_shared<Spring>(p, s, spring_mass);
+	auto spring = make_shared<Spring>(p, s, spring_mass, js["num_samples_on_muscle"], grav, js["epsilon"]);
 	if (js["isSpring"]) {	
 		springs.push_back(spring);		
 	}
@@ -301,13 +301,15 @@ void Scene::step()
 	if (time_integrator == SYMPLECTIC) {
 		symplectic_solver->step(h);
 		for (int i = 0; i < (int)boxes.size(); ++i) {
-			boxes[i]->step(h);
-
+			boxes[i]->step(h);			
 			if (i != 0) {
 				//this->phi.segment<6>(6 * (i - 1)) = boxes[i]->getTwist();
 			}
 		}
 		//MatrixXd jj = symplectic_solver->getJ_twist_thetadot();
+		for (int i = 0; i < (int)springs.size(); ++i) {
+			springs[i]->step();
+		}
 	}
 	else if (time_integrator == RKF45) {
 		// nothing
@@ -365,16 +367,19 @@ void Scene::computeEnergy() {
 
 	// Rigid Body:
 	for (int i = 0; i < (int)boxes.size(); ++i) {
-		double vi = boxes[i]->m * grav.transpose() * boxes[i]->getP();
+		double vi = boxes[i]->getPotentialEnergy();
+		double ki = boxes[i]->getKineticEnergy();
 		V += vi;
-		
-		double ki = 0.5 * boxes[i]->getTwist().transpose() * boxes[i]->getMassMatrix() * boxes[i]->getTwist();
 		K += ki;
 	}	
 
 	// Spring:
-	K += symplectic_solver->getSpringKineticEnergy();
-	V += symplectic_solver->getSpringPotentialEnergy();
+	for (int i = 0; i < (int)springs.size(); ++i) {
+		double vi = springs[i]->getPotentialEnergy();
+		double ki = springs[i]->getKineticEnergy();
+		V += vi;
+		K += ki;
+	}
 
 	if (step_i == 1) {
 		V0 = V;

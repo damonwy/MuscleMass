@@ -21,8 +21,7 @@ public:
 	void step(double h);
 	void draw(std::shared_ptr<MatrixStack> MV, const std::shared_ptr<Program> prog, std::shared_ptr<MatrixStack> P) const;
 	Eigen::MatrixXd getJ_twist_thetadot();
-	double getSpringPotentialEnergy() const { return this->V_s; }
-	double getSpringKineticEnergy() const { return this->K_s; }
+	void test(double h);
 	virtual ~SymplecticIntegrator();
 
 	double m;
@@ -45,7 +44,7 @@ private:
 	double epsilon;
 	bool isReduced;
 	Eigen::Vector3d grav;
-	std::vector< std::shared_ptr<Particle> > samples;
+	std::vector< std::shared_ptr<Particle> > debug_points;
 	int num_samples;	// The number of samples along the muscle lines
 };
 

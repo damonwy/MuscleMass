@@ -80,6 +80,11 @@ void Rigid::step(double h) {
 		}	
 	}
 
+	// Energy Update
+
+	this->V = this->m * grav.transpose() * this->getP();
+	this->K = 0.5 * this->twist.transpose() * mass_mat * this->twist;
+
 	// Joint Update
 	if (i != 0) {
 		Matrix4d E_C_J = getE().inverse() * parent->getE() * joint->getE_P_J();
