@@ -47,6 +47,7 @@ SymplecticIntegrator::SymplecticIntegrator(vector< shared_ptr<Rigid> > _boxes, v
 		m = 6 * (int)boxes.size();
 		n = 6 + 1 * ((int)boxes.size() - 1);
 		M.resize(m, m);	
+		J.resize(m, n);
 		f.resize(m);
 		M.setZero();
 		J.setZero();
@@ -121,114 +122,41 @@ void SymplecticIntegrator::step(double h) {
 		J.setZero();
 		f.setZero();
 
+		VectorXd thetadotlist = Joint::getThetadotVector(joints);
+
 		J = getJ_twist_thetadot();
 
 		for (int i = 0; i < (int)boxes.size(); i++) {
 			auto box = boxes[i];
 			f.segment<6>(6 * i) = box->getMassMatrix() * box->getTwist() + h * box->getForce();
+			//f.segment<6>(6 * i) = h * box->getForce();
 		}
 
 		A = J.transpose() * M * J;
 		b = J.transpose() * f;
 
 		// Compute the inertia matrix of spring using finite difference 
+		//MatrixXd M_s = Spring::computeMassMatrix(springs, (int)boxes.size(), isReduced);
 		
-		VectorXd pert, current_angles;
-		pert.resize(num_joints);
-		current_angles = Scene::getCurrentJointAngles(joints);
-		//current_thetadots = Scene::getCurrentThetadots(joints);
-
-		for (int i = 0; i < (int)springs.size(); ++i) {
-			//springs[i]->setPosBeforePert();
-		}
-
-		MatrixXd M_s;
-		M_s.resize(num_joints, num_joints);
-		M_s.setZero();
-
-		double V_s = 0.0; // potential energy of spring
-		double K_s = 0.0; // kinetic energy of spring
-
-		for (int i = 0; i < (int)springs.size(); ++i) {
-			MatrixXd J_s;
-			J_s.resize(3 * num_samples, num_joints);
-			J_s.setZero();
-
-			double dm = springs[i]->mass / num_samples;
-						
-			debug_points.clear();
-			// Construct Material Jacobian Matrix of all the sample points
-			for (int ii = 0; ii < num_joints; ++ii) {
-				
-				// For each theta add a relative small perturbation
-				pert = current_angles;	
-				//pert = current_thetadots;
-				pert(ii) += epsilon;
-				//VectorXd phi_pert;
-				//phi_pert.resize(num_joints * 6);
-				//phi_pert = J.block(6, 6, 6 * num_joints, num_joints) * pert; // convert to twist
-
-				// Compute new configuration
-				for (int iii = 0; iii < (int)boxes.size(); ++iii) {
-					auto box = boxes[iii];
-					if (iii != 0) {
-						//Matrix4d Etemp = Rigid::bracket6(phi_pert.segment<6>((iii - 1) * 6)).exp();
-						//box->setEtemp(Etemp);
-						// Update temporary points position
-						//box->updateTempPoints();
-					}
-				}
-
-				// Compute new configuration
-				for (int iii = 0; iii < (int)boxes.size(); ++iii) {
-					auto box = boxes[iii];
-					if (iii != 0) {
-						box->setJointAngle(pert(iii - 1), false);
-					}
-				}
-
-				for (int iii = 0; iii < num_samples; ++iii) {
-					Vector3d p_nopert;
-					double s = iii / double(num_samples);
-					//p_nopert = (1 - s)*springs[i]->p0_b + s*springs[i]->p1_b;
-					
-					Vector3d p_pert;
-					p_pert = (1 - s)*springs[i]->p0->x_temp + s*springs[i]->p1->x_temp;
-
-					// Draw sample points under perturbations
-					auto sample = make_shared<Particle>();
-					sample->x = p_pert;
-					debug_points.push_back(sample);
-
-					// Save to J_s
-					J_s.block(3 * iii, ii, 3, 1) = (p_pert - p_nopert) / epsilon;
-				}
-			}
-			
-			// Sum up the inertia matrix of all the sample points
-			for (int ii = 0; ii < num_samples; ++ii) {
-				MatrixXd J_ii = J_s.block(3 * ii, 0, 3, num_joints);
-				// add gravtiy force for each sample
-				VectorXd f_ii = J_ii.transpose() * dm * grav;
-				
-				b.segment(6, num_joints) += f_ii;
-				MatrixXd M_ii = J_ii.transpose() * J_ii * dm;
-				
-				M_s += M_ii;
-			}
-		}
-		// Compute the inertia matrix of wrapCylinder using finite difference 
-
 		// Update M matrix here..
-		M.block(6, 6, num_joints, num_joints) += M_s;
+		//M.block(6, 6, num_joints, num_joints) += M_s;
 
 		x.setZero();
 		MatrixXd JJ = J.block(0, n - num_joints, m, num_joints);
+		
+
 		A = JJ.transpose() * M * JJ;
+		//cout << A << endl;
 		//A += M_s;
-	
+		//cout << A << endl;
+		
+		//VectorXd b_s = Spring::computeGravity(springs, (int)boxes.size(), isReduced);
+		/*cout << b_s << endl;
+		cout << A * thetadotlist << endl;
+		cout << b.segment(6, num_joints) << endl; + b_s * h + A * thetadotlist*/
 		x.segment(6, num_joints) = A.ldlt().solve(b.segment(6, num_joints));	// thetadot
-		cout << x.segment(6, num_joints) << endl;																
+
+		//cout << x.segment(6, num_joints) << endl;																
 		VectorXd phi = JJ * x.segment(6, num_joints);
 
 		// For QP
@@ -358,11 +286,11 @@ void SymplecticIntegrator::step(double h) {
 			}
 		}
 
-		MatrixXd M_s = Spring::computeMassMatrix(springs, (int)boxes.size());
+		MatrixXd M_s = Spring::computeMassMatrix(springs, (int)boxes.size(), isReduced);
 		// Add mass matrix of spring to A matrix
 		A.block(0, 0, 6 * (int)boxes.size(), 6 * (int)boxes.size()) += M_s;
 
-		VectorXd b_s = Spring::computeGravity(springs, (int)boxes.size());
+		VectorXd b_s = Spring::computeGravity(springs, (int)boxes.size(), isReduced);
 		b.segment(0, 6 * (int)boxes.size()) += A.block(0, 0, 6 * (int)boxes.size(), 6 * (int)boxes.size()) * boxtwists + b_s * h;
 
 		x = A.ldlt().solve(b);

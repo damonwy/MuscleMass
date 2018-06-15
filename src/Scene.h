@@ -48,8 +48,6 @@ public:
 	void computeEnergy();
 	void saveData(int num_steps);
 	double getTime() const { return t; }
-	static Eigen::VectorXd getCurrentJointAngles(std::vector<std::shared_ptr<Joint>> joints);
-	static Eigen::VectorXd getCurrentThetadots(std::vector<std::shared_ptr<Joint>> joints);
 private:
 	double t;
 	double h;

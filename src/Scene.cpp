@@ -174,6 +174,10 @@ void Scene::load(const string &RESOURCE_DIR)
 	else if (time_integrator == RKF45) {
 		rkf45_solver = make_shared<RKF45Integrator>(boxes, springs, js["isReduced"]);
 	}
+
+	for (int i = 0; i < (int)springs.size(); ++i) {
+		springs[i]->step(joints);
+	}
 }
 
 shared_ptr<Joint> Scene::addJoint(shared_ptr<Rigid> parent, shared_ptr<Rigid> child, json jE_P_J, json jmin_theta, json jmax_theta) {
@@ -182,6 +186,8 @@ shared_ptr<Joint> Scene::addJoint(shared_ptr<Rigid> parent, shared_ptr<Rigid> ch
 	Matrix4d E_C_J = child->getE().inverse() * parent->getE() * E_P_J;
 	auto joint = make_shared<Joint>(E_P_J, E_C_J, jmin_theta.get<double>() / 180.0 * PI, jmax_theta.get<double>() / 180.0 * PI);
 	child->setJoint(joint);
+	joint->setChild(child);
+	joint->setParent(parent);
 	joints.push_back(joint);
 	return joint;
 }
@@ -218,7 +224,7 @@ shared_ptr<Spring> Scene::addSpring(json jp_x, shared_ptr<Rigid> p_parent, json 
 
 	// Init Spring
 	double spring_mass = jmass;
-	auto spring = make_shared<Spring>(p, s, spring_mass, js["num_samples_on_muscle"], grav, js["epsilon"]);
+	auto spring = make_shared<Spring>(p, s, spring_mass, js["num_samples_on_muscle"], grav, js["epsilon"], js["isReduced"]);
 	if (js["isSpring"]) {	
 		springs.push_back(spring);		
 	}
@@ -308,7 +314,7 @@ void Scene::step()
 		}
 		//MatrixXd jj = symplectic_solver->getJ_twist_thetadot();
 		for (int i = 0; i < (int)springs.size(); ++i) {
-			springs[i]->step();
+			springs[i]->step(joints);
 		}
 	}
 	else if (time_integrator == RKF45) {
@@ -388,26 +394,6 @@ void Scene::computeEnergy() {
 	//cout << V0 - V << endl;
 	//cout << K - K0 << endl;
 	//cout << V0 - V + K - K0 << endl;
-}
-
-VectorXd Scene::getCurrentJointAngles(vector<shared_ptr<Joint>> joints) {
-	VectorXd thetalist;
-	thetalist.resize((int)joints.size());
-	thetalist.setZero();
-	for (int i = 0; i < (int)joints.size(); ++i) {
-		thetalist(i) = joints[i]->getTheta();
-	}
-	return thetalist;
-}
-
-VectorXd Scene::getCurrentThetadots(vector<shared_ptr<Joint>> joints) {
-	VectorXd thetadotlist;
-	thetadotlist.resize((int)joints.size());
-	thetadotlist.setZero();
-	for (int i = 0; i < (int)joints.size(); ++i) {
-		thetadotlist(i) = joints[i]->getThetadot();
-	}
-	return thetadotlist;
 }
 
 void Scene::draw(shared_ptr<MatrixStack> MV, const shared_ptr<Program> prog, const shared_ptr<Program> prog2, shared_ptr<MatrixStack> P) const

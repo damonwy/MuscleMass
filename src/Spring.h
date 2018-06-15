@@ -12,16 +12,19 @@ class Program;
 class MatrixStack;
 class Particle;
 class Rigid;
+class Joint;
 
 class Spring
 {
 public:
-	Spring(std::shared_ptr<Particle> p0, std::shared_ptr<Particle> p1, double _mass, int num_samples, Eigen::Vector3d _grav, double _epsilon);
+	Spring(std::shared_ptr<Particle> p0, std::shared_ptr<Particle> p1, double _mass, int num_samples, Eigen::Vector3d _grav, double _epsilon, bool _isReduced);
 	virtual ~Spring();
-	void step();
+	void step(std::vector<std::shared_ptr<Joint>> joints);
 	void draw(std::shared_ptr<MatrixStack> MV, const std::shared_ptr<Program> prog, const std::shared_ptr<Program> prog2, std::shared_ptr<MatrixStack> P) const;
 	void setSamples(std::vector < std::shared_ptr<Particle> > _samples) { this->samples = _samples; }
-	void updateSamples();
+	void updateSamplesPosition();
+	void updateSamplesJacobian(std::vector<std::shared_ptr<Joint>> joints);
+	
 	
 	Vector12d getBoxTwists() const { return this->phi_box; }
 	Eigen::Vector2d getBoxID() const { return this->box_id; };
@@ -31,8 +34,8 @@ public:
 
 	double computeLength();
 	void computeEnergy();
-	static Eigen::MatrixXd computeMassMatrix(std::vector<std::shared_ptr<Spring> > springs, int num_boxes);
-	static Eigen::VectorXd computeGravity(std::vector<std::shared_ptr<Spring> > springs, int num_boxes);
+	static Eigen::MatrixXd computeMassMatrix(std::vector<std::shared_ptr<Spring> > springs, int num_boxes, bool isReduced);
+	static Eigen::VectorXd computeGravity(std::vector<std::shared_ptr<Spring> > springs, int num_boxes, bool isReduced);
 
 	std::shared_ptr<Particle> p0;
 	std::shared_ptr<Particle> p1;
@@ -49,6 +52,8 @@ public:
 	Eigen::Vector3d grav;
 	Eigen::Vector2d box_id;
 	Vector12d phi_box;	
+	Eigen::VectorXd thetadotlist;
+	bool isReduced;
 };
 
 #endif // MUSCLEMASS_SRC_SPRING_H_
