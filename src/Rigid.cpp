@@ -95,6 +95,31 @@ void Rigid::step(double h) {
 	updatePoints();	
 }
 
+void Rigid::setSingleJointAngle(double _theta) {
+	this->joint->reset();
+	this->joint->setTheta(_theta);
+	if (isReduced) {
+		if (i != 0) {
+			double theta = _theta;
+			Matrix4d R;
+			R.setIdentity();
+			R.block<2, 2>(0, 0) << cos(theta), -sin(theta),
+				sin(theta), cos(theta);
+			Matrix4d E_C_J_new = joint->getE_C_J() * R.inverse();
+			// Update joint
+			joint->setE_C_J(E_C_J_new);
+			Matrix4d E_J_C = joint->getE_C_J().inverse();
+			Matrix4d E_P_J = joint->getE_P_J();
+			Matrix4d E_W_P = parent->getE();
+			Matrix4d E_W_C = E_W_P * E_P_J * E_J_C;
+			this->E_W_0_temp = E_W_C;
+			// Update temporary points position
+			updateTempPoints();
+		}
+	}
+}
+
+
 void Rigid::setJointAngle(double _theta, bool isDrawing) {
 	// Only used in reduced coord
 	this->joint->reset();
@@ -102,8 +127,8 @@ void Rigid::setJointAngle(double _theta, bool isDrawing) {
 	if (isReduced) {
 		// Use reduced positions
 		if (i != 0) {
-			double theta = joint->getTheta();
-
+			//double theta = joint->getTheta();
+			double theta = _theta;
 			Matrix4d R;
 			R.setIdentity();
 			R.block<2, 2>(0, 0) << cos(theta), -sin(theta),

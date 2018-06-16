@@ -83,49 +83,113 @@ void Spring::updateSamplesPosition() {
 
 void Spring::updateSamplesJacobian(vector<shared_ptr<Joint>> joints) {
 	if (isReduced) {
-		// Reduced Coordinate
-		int num_joints = (int)joints.size();
+		//// Reduced Coordinate
+		//int num_joints = (int)joints.size();
 
-		// Resize Jacobian
-		MatrixXd J(3, num_joints);
+		//// Resize Jacobian
+		//MatrixXd J(3, num_joints);
+		//J.setZero();
+		//for (int i = 0; i < (int)samples.size(); ++i) {		
+		//	samples[i]->setJacobianMatrix(J);
+		//}
+
+		//VectorXd pert(num_joints);
+		//VectorXd thetalist(num_joints);
+		//thetadotlist.resize(num_joints);
+		//thetalist = Joint::getThetaVector(joints);
+
+		//// Used to compute the velocity and kinetic energy of samples
+		//thetadotlist = Joint::getThetadotVector(joints);
+
+		//// For each component of thetalist add a relative small perturbation
+		//for (int ii = 0; ii < num_joints; ++ii) {
+		//	// Change ii-th component
+		//	pert = thetalist;
+		//	pert(ii) += epsilon;
+
+		//	// Compute new configuration
+		//	/*for (int jj = 0; jj < num_joints; ++jj) {
+		//		auto joint = joints[jj];
+		//		auto box = joint->getChild();
+		//		box->setJointAngle(pert(jj), false);
+		//		box->updateTempPoints();
+		//	}*/
+		//	//joints[ii]->getChild()->setJointAngle(pert(ii), false);
+
+		//	// Fill in the ii-th column of Jacobian
+		//	for (int isample = 0; isample < (int)samples.size(); ++isample) {
+		//		auto sample = samples[isample];
+		//		double s = sample->s;
+
+		//		Vector3d p_nopert = sample->x;
+		//		Vector3d p_pert = (1 - s) * p0->getTempPos() + s * p1->getTempPos();
+
+		//		Vector3d diff = (p_pert - p_nopert) / epsilon;
+		//		
+		//		// To test if the Jacobian is correct
+		//		int nth_joint = 0;
+		//		if (nth_joint == 1) {
+		//			auto debug = make_shared<Particle>();
+		//			debug->x = p_pert;
+		//			this->debug_points.push_back(debug);
+		//		}
+		//					
+		//		sample->setJacobianMatrixCol(diff, ii);
+		//	}
+		//}
+
+		MatrixXd J(3, 2);
 		J.setZero();
 		for (int i = 0; i < (int)samples.size(); ++i) {		
 			samples[i]->setJacobianMatrix(J);
 		}
 
-		VectorXd pert(num_joints);
-		VectorXd thetalist(num_joints);
-		thetadotlist.resize(num_joints);
-		thetalist = Joint::getThetaVector(joints);
+		auto b0 = p0->getParent();
+		auto b1 = p1->getParent();
 
-		// Used to compute the velocity and kinetic energy of samples
-		thetadotlist = Joint::getThetadotVector(joints);
+		Vector2d theta;
+		theta(0) = b0->getAngle();
+		theta(1) = b1->getAngle();
 
-		// For each component of thetalist add a relative small perturbation
-		for (int ii = 0; ii < num_joints; ++ii) {
-			// Change ii-th component
-			pert = thetalist;
-			pert(ii) += epsilon;
+		// Used to compute velocity of samples and energy
+		thetadot(0) = b0->getThetadot();
+		thetadot(1) = b1->getThetadot();
+		Vector2d pert;
+		// For two angles add a small perturbation
+		pert = theta;
+		pert(0) += epsilon;
 
-			// Compute new configuration
-			for (int jj = 0; jj < num_joints; ++jj) {
-				auto joint = joints[jj];
-				auto box = joint->getChild();
-				box->setJointAngle(pert(jj), false);
-				box->updateTempPoints();
-			}
+		b0->setSingleJointAngle(pert(0));
+		b1->setJointAngle(pert(1), false);
+		b0->updateTempPoints();
+		b1->updateTempPoints();
 
-			// Fill in the ii-th column of Jacobian
-			for (int isample = 0; isample < (int)samples.size(); ++isample) {
-				auto sample = samples[isample];
-				double s = sample->s;
+		for (int isample = 0; isample < (int)samples.size(); ++isample) {
+			auto sample = samples[isample];
+			double s = sample->s;
 
-				Vector3d p_nopert = sample->x;
-				Vector3d p_pert = (1 - s) * p0->getTempPos() + s * p1->getTempPos();
+			Vector3d p_nopert = sample->x;
+			Vector3d p_pert = (1 - s) * p0->getTempPos() + s * p1->getTempPos();
 
-				Vector3d diff = (p_pert - p_nopert) / epsilon;
-				sample->setJacobianMatrixCol(diff, ii);
-			}
+			Vector3d diff = (p_pert - sample->x) / epsilon;
+			sample->setJacobianMatrixCol(diff, 0);
+		}
+
+		pert = theta;
+		pert(1) += epsilon;
+
+		b1->setSingleJointAngle(pert(1));
+		b1->updateTempPoints();
+
+		for (int isample = 0; isample < (int)samples.size(); ++isample) {
+			auto sample = samples[isample];
+			double s = sample->s;
+
+			Vector3d p_nopert = sample->x;
+			Vector3d p_pert = (1 - s) * p0->x + s * p1->getTempPos();
+
+			Vector3d diff = (p_pert - sample->x) / epsilon;
+			sample->setJacobianMatrixCol(diff, 1);
 		}
 	}
 	else {
@@ -198,7 +262,8 @@ void Spring::computeEnergy() {
 		// Update the energy	
 		V_ii = sample->computePotentialEnergy(grav);
 		if (isReduced) {
-			K_ii = sample->computeKineticEnergy(thetadotlist);
+			//K_ii = sample->computeKineticEnergy(thetadotlist);
+			K_ii = sample->computeKineticEnergy(thetadot);
 		}
 		else {
 			K_ii = sample->computeKineticEnergy(phi_box);
@@ -223,7 +288,9 @@ MatrixXd Spring::computeMassMatrix(vector<shared_ptr<Spring> > springs, int num_
 			for (int isample = 0; isample < (int)samples.size(); ++isample) {
 				auto sample = samples[isample];
 				MatrixXd J_ii = sample->getJacobianMatrix();
+				//cout << J_ii << endl;
 				MatrixXd M_ii = J_ii.transpose() * J_ii * sample->m;
+				//cout << M_ii << endl;
 
 				// Fill in Mass matrix
 				M_s += M_ii;
@@ -273,7 +340,6 @@ VectorXd Spring::computeGravity(vector<shared_ptr<Spring> > springs, int num_box
 
 				// Add gravtiy force for each sample to b vector
 				VectorXd f_ii = J_ii.transpose() * sample->m * spring->grav;
-
 				b_s += f_ii;
 			}
 		}
@@ -332,6 +398,15 @@ void Spring::draw(std::shared_ptr<MatrixStack> MV, const std::shared_ptr<Program
 	glVertex3f(p(0), p(1), p(2));
 	glVertex3f(s(0), s(1), s(2));
 	glEnd();
+
+	glPointSize(3.0);
+	glBegin(GL_POINTS);
+	for (int i = 0; i < (int)debug_points.size(); ++i) {
+		Vector3f p = debug_points[i]->x.cast<float>();
+		glVertex3f(p(0), p(1), p(2));
+	}
+	glEnd();
+
 	MV->popMatrix();
 	prog2->unbind();
 }

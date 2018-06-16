@@ -61,6 +61,7 @@ public:
 	void addDoubleCylinder(std::shared_ptr<WrapDoubleCylinder> _double_cylinders) { this->double_cylinders.push_back(_double_cylinders); } 
 	
 	void setJointAngle(double _theta, bool isDrawing);
+	void setSingleJointAngle(double _theta);
 	
 	void updateCylinders();
 	void updateDoubleCylinders();
@@ -74,6 +75,8 @@ public:
 	Eigen::Matrix3d getR() const { return this->E_W_0.block<3, 3>(0, 0); }
 	Eigen::Matrix4d getEtemp() const { return this->E_W_0_temp; }
 	Eigen::Vector3d getDimension() const { return this->dimension; }
+	double getAngle() const { return this->joint->getTheta(); }
+	double getThetadot() const { return this->joint->getThetadot(); }
 	double getPotentialEnergy() const { return this->V; }
 	double getKineticEnergy() const { return this->K; }
 

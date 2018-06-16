@@ -134,29 +134,21 @@ void SymplecticIntegrator::step(double h) {
 
 		A = J.transpose() * M * J;
 		b = J.transpose() * f;
-
-		// Compute the inertia matrix of spring using finite difference 
-		//MatrixXd M_s = Spring::computeMassMatrix(springs, (int)boxes.size(), isReduced);
 		
-		// Update M matrix here..
-		//M.block(6, 6, num_joints, num_joints) += M_s;
+		// Compute the inertia matrix of spring using finite difference 
+		MatrixXd M_s = Spring::computeMassMatrix(springs, (int)boxes.size(), isReduced);
 
 		x.setZero();
 		MatrixXd JJ = J.block(0, n - num_joints, m, num_joints);
 		
-
 		A = JJ.transpose() * M * JJ;
-		//cout << A << endl;
-		//A += M_s;
-		//cout << A << endl;
+		A += M_s;
 		
-		//VectorXd b_s = Spring::computeGravity(springs, (int)boxes.size(), isReduced);
-		/*cout << b_s << endl;
-		cout << A * thetadotlist << endl;
-		cout << b.segment(6, num_joints) << endl; + b_s * h + A * thetadotlist*/
-		x.segment(6, num_joints) = A.ldlt().solve(b.segment(6, num_joints));	// thetadot
+		VectorXd b_s = Spring::computeGravity(springs, (int)boxes.size(), isReduced);
+	
+		x.segment(6, num_joints) = A.ldlt().solve(b.segment(6, num_joints) + b_s * h + M_s * thetadotlist);	// thetadot
 
-		//cout << x.segment(6, num_joints) << endl;																
+		cout << x.segment(6, num_joints) << endl << endl;
 		VectorXd phi = JJ * x.segment(6, num_joints);
 
 		// For QP

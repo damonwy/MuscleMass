@@ -55,9 +55,9 @@ void Joint::setThetadotVector(vector <shared_ptr<Joint>> joints, VectorXd thetad
 void Joint::reset() {
 	E_C_J = E_C_J_0;
 	E_P_J = E_P_J_0;
-	theta = theta_0;
-	thetadot = 0.0;
-	thetaddot = 0.0;
+	//theta = theta_0;
+	//thetadot = 0.0;
+	//thetaddot = 0.0;
 }
 
 Joint::~Joint() {

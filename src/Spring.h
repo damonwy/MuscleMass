@@ -53,7 +53,9 @@ public:
 	Eigen::Vector2d box_id;
 	Vector12d phi_box;	
 	Eigen::VectorXd thetadotlist;
+	Eigen::Vector2d thetadot;
 	bool isReduced;
+	std::vector< std::shared_ptr<Particle> > debug_points;
 };
 
 #endif // MUSCLEMASS_SRC_SPRING_H_
