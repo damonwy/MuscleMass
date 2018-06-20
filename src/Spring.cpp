@@ -20,8 +20,8 @@
 using namespace std;
 using namespace Eigen;
 
-Spring::Spring(shared_ptr<Particle> p0, shared_ptr<Particle> p1, double _mass, int num_samples, Vector3d _grav, double _epsilon, bool _isReduced) :
-	E(1.0), mass(_mass), grav(_grav), epsilon(_epsilon), isReduced(_isReduced)
+Spring::Spring(shared_ptr<Particle> p0, shared_ptr<Particle> p1, double _mass, int num_samples, Vector3d _grav, double _epsilon, bool _isReduced, double _stiffness) :
+	E(_stiffness), mass(_mass), grav(_grav), epsilon(_epsilon), isReduced(_isReduced)
 {
 	assert(p0);
 	assert(p1);
@@ -55,9 +55,6 @@ Spring::Spring(shared_ptr<Particle> p0, shared_ptr<Particle> p1, double _mass, i
 		}
 		samples.push_back(sample);
 	}
-
-	//step();
-
 }
 
 void Spring::step(vector<shared_ptr<Joint>> joints) {
@@ -77,7 +74,6 @@ void Spring::updateSamplesPosition() {
 		auto sample = samples[i];
 		double s = sample->s;
 		sample->x = (1 - s)*p0->x + s*p1->x;
-		//sample->clearJacobianMatrix();
 	}
 }
 
@@ -288,10 +284,8 @@ MatrixXd Spring::computeMassMatrix(vector<shared_ptr<Spring> > springs, int num_
 			for (int isample = 0; isample < (int)samples.size(); ++isample) {
 				auto sample = samples[isample];
 				MatrixXd J_ii = sample->getJacobianMatrix();
-				//cout << J_ii << endl;
 				MatrixXd M_ii = J_ii.transpose() * J_ii * sample->m;
-				//cout << M_ii << endl;
-
+			
 				// Fill in Mass matrix
 				M_s += M_ii;
 			}

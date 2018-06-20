@@ -29,8 +29,7 @@ class RKF45Integrator;
 class Scene
 {
 public:
-	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-	
+	EIGEN_MAKE_ALIGNED_OPERATOR_NEW	
 	Scene();
 	virtual ~Scene();
 	
@@ -39,15 +38,19 @@ public:
 	void tare();
 	void reset();
 	void step();
+
 	std::shared_ptr<Rigid> addBox(nlohmann::json R, nlohmann::json p, nlohmann::json dimension, nlohmann::json scale, nlohmann::json mass, const std::shared_ptr<Shape> shape, nlohmann::json isReduced, int id, std::shared_ptr<Rigid> parent = nullptr);
 	std::shared_ptr<Joint> addJoint(std::shared_ptr<Rigid> parent, std::shared_ptr<Rigid> child, nlohmann::json jE_P_J, nlohmann::json jmin_theta, nlohmann::json jmax_theta);
 	std::shared_ptr<Spring> addSpring(nlohmann::json jp_x, std::shared_ptr<Rigid> p_parent, nlohmann::json js_x, std::shared_ptr<Rigid> s_parent, nlohmann::json jmass);
+	std::shared_ptr<WrapSphere> addSphere(nlohmann::json jp_x, std::shared_ptr<Rigid> p_parent, nlohmann::json js_x, std::shared_ptr<Rigid> s_parent, nlohmann::json jo_x, std::shared_ptr<Rigid> o_parent, nlohmann::json jradius);
 	std::shared_ptr<WrapCylinder> addWrapCylinder(nlohmann::json jp_x, std::shared_ptr<Rigid> p_parent, nlohmann::json js_x, std::shared_ptr<Rigid> s_parent, nlohmann::json jo_x, std::shared_ptr<Rigid> o_parent, nlohmann::json jradius, nlohmann::json jzdir);
+	std::shared_ptr<WrapDoubleCylinder> addWrapDoubleCylinder(nlohmann::json jp_x, std::shared_ptr<Rigid> p_parent, nlohmann::json js_x, std::shared_ptr<Rigid> s_parent, nlohmann::json ju_x, std::shared_ptr<Rigid> u_parent, nlohmann::json jv_x, std::shared_ptr<Rigid> v_parent, nlohmann::json juradius, nlohmann::json jvradius, nlohmann::json jzudir, nlohmann::json jzvdir);
 	
 	void draw(std::shared_ptr<MatrixStack> MV, const std::shared_ptr<Program> prog, const std::shared_ptr<Program> prog2, std::shared_ptr<MatrixStack> P) const;
 	void computeEnergy();
 	void saveData(int num_steps);
 	double getTime() const { return t; }
+
 private:
 	double t;
 	double h;
@@ -78,9 +81,13 @@ private:
 
 	std::vector< std::shared_ptr<Rigid> > boxes;
 	std::vector< std::shared_ptr<Joint> > joints;
-	std::shared_ptr<Solver> solver;
-	std::vector< std::shared_ptr<WrapDoubleCylinder> > wrap_doublecylinders;
+
+	std::shared_ptr<Solver> solver;	
+
 	std::vector< std::shared_ptr<Spring> > springs;
+	std::vector< std::shared_ptr<WrapCylinder> > wrap_cylinders;
+	std::vector< std::shared_ptr<WrapDoubleCylinder> > wrap_doublecylinders;
+	std::vector< std::shared_ptr<WrapSphere> > wrap_spheres;
 
 	std::shared_ptr<SymplecticIntegrator> symplectic_solver;
 	std::shared_ptr<RKF45Integrator> rkf45_solver;

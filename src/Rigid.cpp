@@ -24,15 +24,13 @@ using namespace Eigen;
 Rigid::Rigid() {
 }
 
-Rigid::Rigid(const shared_ptr<Shape> s, Matrix3d _R, Vector3d _p, Vector3d _dimension, double _r, double _m, bool _isReduced) :
-	r(_r), m(_m), i(-1), box(s), dimension(_dimension), grav(0.0, -9.8, 0.0), isReduced(_isReduced)
+Rigid::Rigid(const shared_ptr<Shape> s, Matrix3d _R, Vector3d _p, Vector3d _dimension, double _r, double _m, bool _isReduced, Vector3d _grav) :
+	r(_r), m(_m), i(-1), box(s), dimension(_dimension), grav(_grav), isReduced(_isReduced)
 {
 	this->twist.setZero();
 	this->force.setZero();
 
-	E_W_0.setZero();
-	E_W_0(3, 3) = 1.0;
-	
+	E_W_0.setIdentity();	
 	setP(_p);
 	setR(_R);
 
@@ -127,7 +125,6 @@ void Rigid::setJointAngle(double _theta, bool isDrawing) {
 	if (isReduced) {
 		// Use reduced positions
 		if (i != 0) {
-			//double theta = joint->getTheta();
 			double theta = _theta;
 			Matrix4d R;
 			R.setIdentity();
@@ -156,12 +153,6 @@ void Rigid::setJointAngle(double _theta, bool isDrawing) {
 			}
 		}
 	}
-
-	// Joint Update
-	/*if (i != 0) {
-		Matrix4d E_C_J = getEtemp().inverse() * parent->getEtemp() * joint->getE_P_J();
-		this->joint->setE_C_J(E_C_J);
-	}*/
 }
 
 void Rigid::updateCylinders() {

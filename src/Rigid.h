@@ -25,7 +25,7 @@ class Rigid
 public:
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 		Rigid();
-	Rigid(const std::shared_ptr<Shape> shape, Eigen::Matrix3d _R, Eigen::Vector3d _p, Eigen::Vector3d _dimension, double _r, double _m, bool _isReduced);
+	Rigid(const std::shared_ptr<Shape> shape, Eigen::Matrix3d _R, Eigen::Vector3d _p, Eigen::Vector3d _dimension, double _r, double _m, bool _isReduced, Eigen::Vector3d _grav);
 	virtual ~Rigid();
 	void tare();
 	void reset();

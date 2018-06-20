@@ -32,15 +32,15 @@ using namespace Eigen;
 #include <unsupported/Eigen/MatrixFunctions> // TODO: avoid using this later, write a func instead
 double inf = numeric_limits<double>::infinity();
 
-SymplecticIntegrator::SymplecticIntegrator(vector< shared_ptr<Rigid> > _boxes, vector< shared_ptr<Joint>> _joints, vector< shared_ptr<Spring> > _springs, bool _isReduced, int _num_samples):
+SymplecticIntegrator::SymplecticIntegrator(vector< shared_ptr<Rigid> > _boxes, vector< shared_ptr<Joint>> _joints, vector< shared_ptr<Spring> > _springs, bool _isReduced, int _num_samples, Vector3d _grav, double _epsilon):
 		num_joints(_boxes.size() - 1),
 		num_samples(_num_samples),
 		boxes(_boxes),
 		joints(_joints),
 		springs(_springs),
 		isReduced(_isReduced),
-		epsilon(1e-6),
-		grav(0.0, -9.8, 0.0)
+		epsilon(_epsilon),
+		grav(_grav)
 {
 
 	if (isReduced) {
@@ -130,7 +130,7 @@ void SymplecticIntegrator::step(double h) {
 			auto box = boxes[i];
 			f.segment<6>(6 * i) = box->getMassMatrix() * box->getTwist() + h * box->getForce();
 			//f.segment<6>(6 * i) = h * box->getForce();
-		}
+    		}
 
 		A = J.transpose() * M * J;
 		b = J.transpose() * f;

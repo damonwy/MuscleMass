@@ -17,7 +17,7 @@ class Joint;
 class Spring
 {
 public:
-	Spring(std::shared_ptr<Particle> p0, std::shared_ptr<Particle> p1, double _mass, int num_samples, Eigen::Vector3d _grav, double _epsilon, bool _isReduced);
+	Spring(std::shared_ptr<Particle> p0, std::shared_ptr<Particle> p1, double _mass, int num_samples, Eigen::Vector3d _grav, double _epsilon, bool _isReduced, double _stiffness);
 	virtual ~Spring();
 	void step(std::vector<std::shared_ptr<Joint>> joints);
 	void draw(std::shared_ptr<MatrixStack> MV, const std::shared_ptr<Program> prog, const std::shared_ptr<Program> prog2, std::shared_ptr<MatrixStack> P) const;

@@ -15,6 +15,8 @@
 #include <Eigen/Dense>
 
 #include "WrapObst.h"
+#include "Particle.h"
+#include "Vector.h"
 
 class Particle;
 class Vector;
@@ -106,53 +108,46 @@ public:
 	using WrapObst::getPoints;
 	Eigen::MatrixXd getPoints(int num_points);
 
-	Status get_status_u() const
-	{
-		return status_U;
-	}
-	
-	Status get_status_v() const
-	{
-		return status_V;
-	}
+	Status get_status_u() const { return status_U; }	
+	Status get_status_v() const { return status_V; }
 
 	void step();
 	void draw(std::shared_ptr<MatrixStack> MV, const std::shared_ptr<Program> prog, const std::shared_ptr<Program> prog2, std::shared_ptr<MatrixStack> P) const;
 
 	// get
-	Eigen::Vector3d getp_U() const;
-	Eigen::Matrix3d getR_U() const;
-	Eigen::Matrix4d getE_U() const;
-	Eigen::Matrix4d getE_P_U() const;
+	Eigen::Vector3d getp_U() const { return this->E_W_U.block<3, 1>(0, 3); }
+	Eigen::Matrix3d getR_U() const { return this->E_W_U.block<3, 3>(0, 0); }
+	Eigen::Matrix4d getE_U() const { return this->E_W_U; }
+	Eigen::Matrix4d getE_P_U() const { return this->E_P_U; }
 
-	Eigen::Vector3d getp_V() const;
-	Eigen::Matrix3d getR_V() const;
-	Eigen::Matrix4d getE_V() const;
-	Eigen::Matrix4d getE_P_V() const;
+	Eigen::Vector3d getp_V() const { return this->E_W_V.block<3, 1>(0, 3); }
+	Eigen::Matrix3d getR_V() const { return this->E_W_V.block<3, 3>(0, 0); }
 
-	std::shared_ptr<Rigid> getParent_U() const;
-	std::shared_ptr<Rigid> getParent_V() const;
+	Eigen::Matrix4d getE_V() const { return this->E_W_V; }
+	Eigen::Matrix4d getE_P_V() const { return this->E_P_V; }
+
+	std::shared_ptr<Rigid> getParent_U() const { return this->parent_U; }
+	std::shared_ptr<Rigid> getParent_V() const { return this->parent_V; }
 
 	// set
-	void setE_U(Eigen::Matrix4d E);
-	void setE_V(Eigen::Matrix4d E);
+	void setE_U(Eigen::Matrix4d E) { this->E_W_U = E; }
+	void setE_V(Eigen::Matrix4d E) { this->E_W_V = E; }
 
-	void setP(std::shared_ptr<Particle> _P);
-	void setS(std::shared_ptr<Particle> _S);
+	void setP(std::shared_ptr<Particle> _P) { this->P = _P; this->point_P = P->x; }
+	void setS(std::shared_ptr<Particle> _S) { this->S = _S; this->point_S = S->x; }
 
-	void setU(std::shared_ptr<Particle> _U);
-	void setV(std::shared_ptr<Particle> _V);
+	void setU(std::shared_ptr<Particle> _U) { this->U = _U; this->point_U = U->x; }
+	void setV(std::shared_ptr<Particle> _V) { this->V = _V; this->point_V = V->x; }
 
-	void setZ_U(std::shared_ptr<Vector> _z_U);
-	void setZ_V(std::shared_ptr<Vector> _z_V);
-	void setNumPoints(int _num_points);
+	void setZ_U(std::shared_ptr<Vector> _z_U) { this->z_U = _z_U; this->vec_z_U = this->z_U->dir; }
+	void setZ_V(std::shared_ptr<Vector> _z_V) { this->z_V = _z_V; this->vec_z_V = this->z_V->dir; }
+	void setNumPoints(int _num_points) { this->num_points = _num_points; }
 
-	void setParent_U(std::shared_ptr<Rigid> _parent_U);
-	void setParent_V(std::shared_ptr<Rigid> _parent_V);
+	void setParent_U(std::shared_ptr<Rigid> _parent_U) { this->parent_U = _parent_U; }
+	void setParent_V(std::shared_ptr<Rigid> _parent_V) { this->parent_V = _parent_V; }
 
-	void setE_P_U(Eigen::Matrix4d E);
-	void setE_P_V(Eigen::Matrix4d E);
-	
+	void setE_P_U(Eigen::Matrix4d E) { this->E_P_U = E; }
+	void setE_P_V(Eigen::Matrix4d E) { this->E_P_V = E; }	
 };
 
 #endif // MUSCLEMASS_SRC_WRAPDOUBLECYLINDER_H_

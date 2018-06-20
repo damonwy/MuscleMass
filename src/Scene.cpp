@@ -79,97 +79,18 @@ void Scene::load(const string &RESOURCE_DIR)
 	// Init WrapCylinder
 	auto wc0 = addWrapCylinder(js["wc_p_x0"], box1, js["wc_s_x0"], box2, js["wc_o_x0"], box2, js["cylinder_radius"], js["wc_z_dir0"]);
 	
-	// Attached to wrapDoubleCylinder
-	//auto wdc_u = make_shared<Particle>(sphereShape);
-	//wdc_u->x0 << cylinder_radius + box1->getDimension()(0), -0.5 * box1->getDimension()(1) + 1.0, 0.0;
-	//wdc_u->r = js["wdc_u_r"];
-	//wdc_u->update(box1->getE());
-	//box1->addPoint(wdc_u);
+	// Init WrapDoubleCylinder
+	auto wdc0 = addWrapDoubleCylinder(js["wdc_p_x0"], box1, js["wdc_s_x0"], box2, js["wdc_u_x0"], box1, js["wdc_v_x0"], box2, js["cylinder_radius"], js["cylinder_radius"], js["wdc_z_u_dir0"], js["wdc_z_v_dir0"]);
 
-	//auto wdc_v = make_shared<Particle>(sphereShape);
-	//wdc_v->x0 << cylinder_radius + box2->getDimension()(0), -0.5 * box2->getDimension()(1) + 1.0, 0.0;
-	//wdc_v->r = js["wdc_v_r"];
-	//wdc_v->update(box2->getE());
-	//box2->addPoint(wdc_v);
+	// Init WrapSphere
+	auto ws0 = addSphere(js["ws_p_x0"], box1, js["ws_s_x0"], box2, js["ws_o_x0"], box2, js["ws_o_r"]);
 
-	//auto wc_z = make_shared<Vector>();
-	//from_json(js["wc_z_dir0"], wc_z->dir0);
-	//wc_z->dir = wc_z->dir0;
-	//wc_z->setP(wc_o);
-	//wc_z->update(box2->getE());
-
-	//auto wdc_z_u = make_shared<Vector>();
-	//from_json(js["wdc_z_u_dir0"], wdc_z_u->dir0);
-	//wdc_z_u->dir = wdc_z_u->dir0;
-	//wdc_z_u->setP(wdc_u);
-	//wdc_z_u->update(box1->getE());
-
-	//auto wdc_z_v = make_shared<Vector>();
-	//from_json(js["wdc_z_v_dir0"], wdc_z_v->dir0);
-	//wdc_z_v->dir = wdc_z_v->dir0;
-	//wdc_z_v->setP(wdc_v);
-	//wdc_z_v->update(box2->getE());
-
-	//// Init WrapCylinder
-	//Vector3d O = Vector3d(cylinder_radius + box2->getDimension()(0), -0.5 * box2->getDimension()(1) + 1.0, 0.0);
-
-	//Matrix3d R;
-	//from_json(js["Rx"], R);
-	//Matrix4d Ewrap;
-	//Ewrap.setIdentity();
-	//Ewrap.block<3, 3>(0, 0) = R;
-	//Ewrap.block<3, 1>(0, 3) = O;
-
-	//// Init WrapDoubleCylinder
-	//auto wrap_doublecylinder = make_shared<WrapDoubleCylinder>(cylinderShape, cylinder_radius, cylinder_radius, num_points_on_arc);
-	//wrap_doublecylinder->setP(wc_p);
-	//wrap_doublecylinder->setS(wc_s);
-	//wrap_doublecylinder->setU(wdc_u);
-	//wrap_doublecylinder->setV(wdc_v);
-	//wrap_doublecylinder->setZ_U(wdc_z_u);
-	//wrap_doublecylinder->setZ_V(wdc_z_v);
-	//wrap_doublecylinder->setE_U(box1->getE() * Ewrap);
-	//wrap_doublecylinder->setE_P_U(Ewrap);
-	//wrap_doublecylinder->setE_V(box2->getE() * Ewrap);
-	//wrap_doublecylinder->setE_P_V(Ewrap);
-	//wrap_doublecylinder->setParent_U(box1);
-	//wrap_doublecylinder->setParent_V(box2);
-
-	//box2->addDoubleCylinder(wrap_doublecylinder); // Only add double cylinder to the latest updated rigid body, so that all the positions are updated
 	box2->setCylinderStatus(js["isCylinder"]);
 	box2->setDoubleCylinderStatus(js["isDoubleCylinder"]);
 	box2->setSphereStatus(js["isSphere"]);
 
-	//auto ws_p = make_shared<Particle>(sphereShape);
-	//from_json(js["ws_p_x0"], ws_p->x0);
-	//ws_p->r = js["ws_p_r"];
-	//ws_p->update(box1->getE());
-	//box1->addPoint(ws_p);
-
-	//auto ws_s = make_shared<Particle>(sphereShape);
-	//from_json(js["ws_s_x0"], ws_s->x0);
-	//ws_s->r = js["ws_s_r"];
-	//ws_s->update(box2->getE());
-	//box2->addPoint(ws_s);
-
-	//auto ws_o = make_shared<Particle>(sphereShape);
-	//ws_o->x0 = Vector3d(cylinder_radius + box2->getDimension()(0), -0.5 * box2->getDimension()(1) + 1.0, 0.0);
-	//ws_o->r = js["ws_o_r"];
-	//ws_o->update(box2->getE());
-	//box2->addPoint(ws_o);
-
-	//// Init WrapSphere
-	//auto wrap_sphere = make_shared<WrapSphere>(cylinder_radius, num_points_on_arc);
-
-	//wrap_sphere->setP(ws_p);
-	//wrap_sphere->setS(ws_s);
-	//wrap_sphere->setO(ws_o);
-
-	//wrap_sphere->setParent(box2);
-	//box2->addSphere(wrap_sphere);
-
 	if (time_integrator == SYMPLECTIC) {
-		symplectic_solver = make_shared<SymplecticIntegrator>(boxes, joints, springs, js["isReduced"], js["num_samples_on_muscle"]);
+		symplectic_solver = make_shared<SymplecticIntegrator>(boxes, joints, springs, js["isReduced"], js["num_samples_on_muscle"], js["grav"], js["epsilon"]);
 	}
 	else if (time_integrator == RKF45) {
 		rkf45_solver = make_shared<RKF45Integrator>(boxes, springs, js["isReduced"]);
@@ -200,7 +121,7 @@ shared_ptr<Rigid> Scene::addBox(json _R, json _p, json _dimension, json _scale, 
 	Eigen::from_json(_dimension, dimension);
 	double scale = _scale;
 	double mass = _mass;
-	auto box = make_shared<Rigid>(shape, R, p, dimension, scale, mass, _isReduced);
+	auto box = make_shared<Rigid>(shape, R, p, dimension, scale, mass, _isReduced, js["grav"]);
 	box->setIndex(id);
 	box->setParent(parent);
 	boxes.push_back(box);
@@ -224,11 +145,47 @@ shared_ptr<Spring> Scene::addSpring(json jp_x, shared_ptr<Rigid> p_parent, json 
 
 	// Init Spring
 	double spring_mass = jmass;
-	auto spring = make_shared<Spring>(p, s, spring_mass, js["num_samples_on_muscle"], grav, js["epsilon"], js["isReduced"]);
+	auto spring = make_shared<Spring>(p, s, spring_mass, js["num_samples_on_muscle"], grav, js["epsilon"], js["isReduced"], js["stiffness"]);
 	if (js["isSpring"]) {	
 		springs.push_back(spring);		
 	}
 	return spring;
+}
+
+shared_ptr<WrapSphere> Scene::addSphere(json jp_x, shared_ptr<Rigid> p_parent, json js_x, shared_ptr<Rigid> s_parent, json jo_x, shared_ptr<Rigid> o_parent, json jradius) {
+	auto ws_p = make_shared<Particle>(sphereShape);
+	from_json(jp_x, ws_p->x0);
+	ws_p->r = js["particle_r"];
+	ws_p->update(p_parent->getE());
+	p_parent->addPoint(ws_p);
+
+	auto ws_s = make_shared<Particle>(sphereShape);
+	from_json(js_x, ws_s->x0);
+	ws_s->r = js["particle_r"];
+	ws_s->update(s_parent->getE());
+	s_parent->addPoint(ws_s);
+
+	double s_radius = jradius;
+	Vector3d o_x;
+	from_json(jo_x, o_x);
+	auto ws_o = make_shared<Particle>(sphereShape);
+	ws_o->x0 = Vector3d(s_radius + o_parent->getDimension()(0), -0.5 * o_parent->getDimension()(1) + 1.0, 0.0);
+	ws_o->x0 += o_x;
+	ws_o->r = s_radius;
+	ws_o->update(o_parent->getE());
+	o_parent->addPoint(ws_o);
+
+	// Init WrapSphere
+	auto wrap_sphere = make_shared<WrapSphere>(s_radius, js["num_samples_on_muscle"]);
+
+	wrap_sphere->setP(ws_p);
+	wrap_sphere->setS(ws_s);
+	wrap_sphere->setO(ws_o);
+
+	wrap_sphere->setParent(s_parent);
+	s_parent->addSphere(wrap_sphere);
+	wrap_spheres.push_back(wrap_sphere);
+	return wrap_sphere;
 }
 
 shared_ptr<WrapCylinder> Scene::addWrapCylinder(json jp_x, shared_ptr<Rigid> p_parent, json js_x, shared_ptr<Rigid> s_parent, json jo_x, shared_ptr<Rigid> o_parent, json jradius, json jzdir) {
@@ -248,14 +205,16 @@ shared_ptr<WrapCylinder> Scene::addWrapCylinder(json jp_x, shared_ptr<Rigid> p_p
 
 	double cylinder_radius = jradius;
 	auto wc_o = make_shared<Particle>(sphereShape);
+	Vector3d o_x;
+	from_json(jo_x, o_x);
 	wc_o->x0 << cylinder_radius + o_parent->getDimension()(0), -0.5 * o_parent->getDimension()(1) + 1.0, 0.0;
+	wc_o->x0 += o_x;
 	wc_o->r = js["particle_r"];
 	wc_o->setParent(o_parent);
 	wc_o->update(o_parent->getE());
 	o_parent->addPoint(wc_o);
 
 	int num_points_on_arc = js["num_points_on_arc"];
-	//Vector3d O = Vector3d(cylinder_radius + box2->getDimension()(0), -0.5 * box2->getDimension()(1) + 1.0, 0.0);
 	Matrix3d R;
 	from_json(js["Rx"], R);
 	Matrix4d Ewrap;
@@ -277,8 +236,90 @@ shared_ptr<WrapCylinder> Scene::addWrapCylinder(json jp_x, shared_ptr<Rigid> p_p
 	wrap_cylinder->setZ(wc_z);
 
 	o_parent->addCylinder(wrap_cylinder);
+
+	wrap_cylinders.push_back(wrap_cylinder);
 	return wrap_cylinder;
 }
+
+shared_ptr<WrapDoubleCylinder> Scene::addWrapDoubleCylinder(json jp_x, shared_ptr<Rigid> p_parent, json js_x, shared_ptr<Rigid> s_parent, json ju_x, shared_ptr<Rigid> u_parent, json jv_x, shared_ptr<Rigid> v_parent, json juradius, json jvradius, json jzudir, json jzvdir) {
+	auto wdc_p = make_shared<Particle>(sphereShape);
+	from_json(jp_x, wdc_p->x0);
+	wdc_p->r = js["particle_r"];
+	wdc_p->setParent(p_parent);
+	wdc_p->update(p_parent->getE());
+	p_parent->addPoint(wdc_p);
+
+	auto wdc_s = make_shared<Particle>(sphereShape);
+	from_json(js_x, wdc_s->x0);
+	wdc_s->r = js["particle_r"];
+	wdc_s->setParent(s_parent);
+	wdc_s->update(s_parent->getE());
+	s_parent->addPoint(wdc_s);
+
+	double u_radius = juradius;
+	double v_radius = jvradius;
+
+	auto wdc_u = make_shared<Particle>(sphereShape);
+	Vector3d u_x;
+	from_json(ju_x, u_x);
+	wdc_u->x0 << u_radius + u_parent->getDimension()(0), -0.5 * u_parent->getDimension()(1) + 1.0, 0.0;
+	wdc_u->x0 += u_x;
+	wdc_u->r = js["particle_r"];
+	wdc_u->update(u_parent->getE());
+	u_parent->addPoint(wdc_u);
+
+	auto wdc_v = make_shared<Particle>(sphereShape);
+	Vector3d v_x;
+	from_json(jv_x, v_x);
+	wdc_v->x0 << v_radius + v_parent->getDimension()(0), -0.5 * v_parent->getDimension()(1) + 1.0, 0.0;
+	wdc_v->x0 += v_x;
+	wdc_v->r = js["particle_r"];
+	wdc_v->update(v_parent->getE());
+	v_parent->addPoint(wdc_v);
+
+	auto wdc_z_u = make_shared<Vector>();
+	from_json(jzudir, wdc_z_u->dir0);
+	wdc_z_u->dir = wdc_z_u->dir0;
+	wdc_z_u->setP(wdc_u);
+	wdc_z_u->update(u_parent->getE());
+
+	auto wdc_z_v = make_shared<Vector>();
+	from_json(jzvdir, wdc_z_v->dir0);
+	wdc_z_v->dir = wdc_z_v->dir0;
+	wdc_z_v->setP(wdc_v);
+	wdc_z_v->update(v_parent->getE());
+
+	Matrix3d R;
+	from_json(js["Rx"], R);
+	Matrix4d Ewrapu, Ewrapv;
+	Ewrapu.setIdentity();
+	Ewrapu.block<3, 3>(0, 0) = R;
+	Ewrapu.block<3, 1>(0, 3) = wdc_u->x0;
+
+	Ewrapv.setIdentity();
+	Ewrapv.block<3, 3>(0, 0) = R;
+	Ewrapv.block<3, 1>(0, 3) = wdc_v->x0;
+
+	//// Init WrapDoubleCylinder
+	auto wrap_doublecylinder = make_shared<WrapDoubleCylinder>(cylinderShape, juradius, jvradius, js["num_points_on_arc"]);
+	wrap_doublecylinder->setP(wdc_p);
+	wrap_doublecylinder->setS(wdc_s);
+	wrap_doublecylinder->setU(wdc_u);
+	wrap_doublecylinder->setV(wdc_v);
+	wrap_doublecylinder->setZ_U(wdc_z_u);
+	wrap_doublecylinder->setZ_V(wdc_z_v);
+	wrap_doublecylinder->setE_U(u_parent->getE() * Ewrapu);
+	wrap_doublecylinder->setE_P_U(Ewrapu);
+	wrap_doublecylinder->setE_V(v_parent->getE() * Ewrapv);
+	wrap_doublecylinder->setE_P_V(Ewrapv);
+	wrap_doublecylinder->setParent_U(u_parent);
+	wrap_doublecylinder->setParent_V(v_parent);
+	wrap_doublecylinders.push_back(wrap_doublecylinder);
+
+	s_parent->addDoubleCylinder(wrap_doublecylinder);// Only add double cylinder to the latest updated rigid body, so that all the positions are updated
+	return wrap_doublecylinder;
+}
+
 
 void Scene::init()
 {
