@@ -204,8 +204,19 @@ void Rigid::draw(shared_ptr<MatrixStack> MV, const shared_ptr<Program> prog, con
 {
 	prog->bind();
 	if (box) {
-		glUniform3fv(prog->getUniform("kdFront"), 1, Vector3f(1.0, 0.0, 0.0).data());
-		glUniform3fv(prog->getUniform("kdBack"), 1, Vector3f(1.0, 1.0, 0.0).data());
+		glUniformMatrix4fv(prog->getUniform("P"), 1, GL_FALSE, glm::value_ptr(P->topMatrix()));
+		MV->pushMatrix();
+		glUniform3f(prog->getUniform("lightPos1"), 1.0, 1.0,1.0);
+		glUniform1f(prog->getUniform("intensity_1"), 0.8);
+		glUniform3f(prog->getUniform("lightPos2"), -1.0, 1.0,1.0);
+		glUniform1f(prog->getUniform("intensity_2"), 0.2);
+		glUniform1f(prog->getUniform("s"), 200);
+		glUniform3f(prog->getUniform("ka"), 0.2, 0.2, 0.2);
+		glUniform3f(prog->getUniform("kd"), 0.8, 0.7, 0.7);
+		glUniform3f(prog->getUniform("ks"), 1.0, 0.9, 0.8);
+		
+		//glUniform3fv(prog->getUniform("kdFront"), 1, Vector3f(1.0, 0.0, 0.0).data());
+		//glUniform3fv(prog->getUniform("kdBack"), 1, Vector3f(1.0, 1.0, 0.0).data());
 		MV->pushMatrix();
 		Vector3d x = getP();
 		MV->translate(x(0), x(1), x(2));

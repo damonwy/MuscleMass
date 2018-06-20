@@ -10,6 +10,7 @@
 */
 
 #include "WrapObst.h"
+#include "Particle.h"
 
 #include <vector>
 #include <memory>
@@ -67,10 +68,10 @@ public:
 	void step();
 	void draw(std::shared_ptr<MatrixStack> MV, const std::shared_ptr<Program> prog, const std::shared_ptr<Program> prog2, std::shared_ptr<MatrixStack> P) const;
 
-	void setP(std::shared_ptr<Particle> _P);
-	void setS(std::shared_ptr<Particle> _S);
-	void setO(std::shared_ptr<Particle> _O);
-	void setParent(std::shared_ptr<Rigid> _parent);
+	void setP(std::shared_ptr<Particle> _P) { this->P = _P; }
+	void setS(std::shared_ptr<Particle> _S) { this->S = _S; }
+	void setO(std::shared_ptr<Particle> _O) { this->O = _O; this->O->r = this->radius; }
+	void setParent(std::shared_ptr<Rigid> _parent) { this->parent = _parent; }
 
 };
 

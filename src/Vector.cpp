@@ -41,10 +41,6 @@ void Vector::update(Matrix4d E) {
 	this->dir = pos.segment<3>(0);
 }
 
-void Vector::setP(shared_ptr<Particle> _p) {
-	this->p = _p;
-}
-
 void Vector::draw(shared_ptr<MatrixStack> MV, shared_ptr<MatrixStack> P, const shared_ptr<Program> prog) const
 {
 	if (p) {
@@ -52,8 +48,7 @@ void Vector::draw(shared_ptr<MatrixStack> MV, shared_ptr<MatrixStack> P, const s
 		glUniformMatrix4fv(prog->getUniform("P"), 1, GL_FALSE, glm::value_ptr(P->topMatrix()));
 		glUniformMatrix4fv(prog->getUniform("MV"), 1, GL_FALSE, glm::value_ptr(MV->topMatrix()));
 		MV->pushMatrix();
-		glUniformMatrix4fv(prog->getUniform("MV"), 1, GL_FALSE, glm::value_ptr(MV->topMatrix()));
-		glColor3f(0.0, 0.0, 0.0); // black
+		glColor3f(0.8, 0.7, 0.0);
 		glLineWidth(3);
 		glBegin(GL_LINES);
 		Vector3f p0 = p->x.cast<float>();

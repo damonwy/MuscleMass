@@ -46,7 +46,8 @@ Spring::Spring(shared_ptr<Particle> p0, shared_ptr<Particle> p1, double _mass, i
 
 	for (int i = 0; i < num_samples; ++i) {
 		auto sample = make_shared<Particle>();
-		double s = i / double(num_samples);
+		double s = i / double(num_samples - 1);
+		//cout << s << endl;
 		sample->s = s;
 		sample->x = (1 - s)*p0->x + s*p1->x;
 		sample->m = dm;
@@ -78,6 +79,8 @@ void Spring::updateSamplesPosition() {
 }
 
 void Spring::updateSamplesJacobian(vector<shared_ptr<Joint>> joints) {
+	
+
 	if (isReduced) {
 		//// Reduced Coordinate
 		//int num_joints = (int)joints.size();
@@ -239,6 +242,13 @@ void Spring::updateSamplesJacobian(vector<shared_ptr<Joint>> joints) {
 
 				Vector3d p_nopert = sample->x;
 				Vector3d p_pert = (1 - s) * p0->x + s * p1->getTempPos();
+				
+				/*if (ii == 0) {
+					auto debug = make_shared<Particle>();
+					debug->x = p_pert;
+					debug_points.push_back(debug);
+				}*/
+				
 
 				Vector3d diff = (p_pert - sample->x) / epsilon;
 				sample->setJacobianMatrixCol(diff, ii + 6);
@@ -368,8 +378,18 @@ VectorXd Spring::computeGravity(vector<shared_ptr<Spring> > springs, int num_box
 void Spring::draw(std::shared_ptr<MatrixStack> MV, const std::shared_ptr<Program> prog, const std::shared_ptr<Program> prog2, std::shared_ptr<MatrixStack> P) const {
 
 	prog->bind();
-	glUniform3fv(prog->getUniform("kdFront"), 1, Vector3f(1.0, 0.0, 0.0).data());
-	glUniform3fv(prog->getUniform("kdBack"), 1, Vector3f(1.0, 1.0, 0.0).data());
+	glUniformMatrix4fv(prog->getUniform("P"), 1, GL_FALSE, glm::value_ptr(P->topMatrix()));
+	MV->pushMatrix();
+	glUniform3f(prog->getUniform("lightPos1"), 1.0, 1.0, 1.0);
+	glUniform1f(prog->getUniform("intensity_1"), 0.8);
+	glUniform3f(prog->getUniform("lightPos2"), -1.0, 1.0, 1.0);
+	glUniform1f(prog->getUniform("intensity_2"), 0.2);
+	glUniform1f(prog->getUniform("s"), 200);
+	glUniform3f(prog->getUniform("ka"), 0.9, 0.5, 0.2);
+	glUniform3f(prog->getUniform("kd"), 0, 0, 1);
+	glUniform3f(prog->getUniform("ks"), 0, 1.0, 0);
+	//glUniform3fv(prog->getUniform("kdFront"), 1, Vector3f(1.0, 0.0, 0.0).data());
+	//glUniform3fv(prog->getUniform("kdBack"), 1, Vector3f(1.0, 1.0, 0.0).data());
 
 	// Draw P, Spoints
 	this->p0->draw(MV, prog);
@@ -382,9 +402,8 @@ void Spring::draw(std::shared_ptr<MatrixStack> MV, const std::shared_ptr<Program
 	glUniformMatrix4fv(prog2->getUniform("P"), 1, GL_FALSE, glm::value_ptr(P->topMatrix()));
 	glUniformMatrix4fv(prog2->getUniform("MV"), 1, GL_FALSE, glm::value_ptr(MV->topMatrix()));
 	MV->pushMatrix();
-	glUniformMatrix4fv(prog->getUniform("MV"), 1, GL_FALSE, glm::value_ptr(MV->topMatrix()));
-	glColor3f(0.0, 0.0, 0.0); // black
-	glLineWidth(3);
+	glColor3f(0.1, 0.5, 0.6); 
+	glLineWidth(4);
 	Vector3d p = p0->x;
 	Vector3d s = p1->x;
 

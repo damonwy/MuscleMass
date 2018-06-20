@@ -186,7 +186,6 @@ void SymplecticIntegrator::step(double h) {
 				xu(i - 1) = inf;
 			}
 		}
-
 		if (isQP) {
 			shared_ptr<QuadProgMosek> program_ = make_shared <QuadProgMosek>();
 			program_->setParamInt(MSK_IPAR_OPTIMIZER, MSK_OPTIMIZER_INTPNT);
@@ -301,7 +300,6 @@ void SymplecticIntegrator::draw(shared_ptr<MatrixStack> MV, const shared_ptr<Pro
 	glUniformMatrix4fv(prog->getUniform("P"), 1, GL_FALSE, glm::value_ptr(P->topMatrix()));
 	glUniformMatrix4fv(prog->getUniform("MV"), 1, GL_FALSE, glm::value_ptr(MV->topMatrix()));
 	MV->pushMatrix();
-	glUniformMatrix4fv(prog->getUniform("MV"), 1, GL_FALSE, glm::value_ptr(MV->topMatrix()));
 	glColor3f(1.0, 0.0, 0.0); // black
 	glPointSize(3.0);
 	glBegin(GL_POINTS);

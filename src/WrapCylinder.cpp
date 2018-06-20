@@ -155,8 +155,19 @@ void WrapCylinder::draw(shared_ptr<MatrixStack> MV, const shared_ptr<Program> pr
 	prog->bind();
 	// Draw cylinder
 	if (cylinder_shape) {
-		glUniform3fv(prog->getUniform("kdFront"), 1, Vector3f(1.0, 0.0, 0.0).data());
-		glUniform3fv(prog->getUniform("kdBack"), 1, Vector3f(1.0, 1.0, 0.0).data());
+		glUniformMatrix4fv(prog->getUniform("P"), 1, GL_FALSE, glm::value_ptr(P->topMatrix()));
+		glUniform3f(prog->getUniform("lightPos1"), 1.0, 1.0, 1.0);
+		glUniform1f(prog->getUniform("intensity_1"), 0.8);
+		glUniform3f(prog->getUniform("lightPos2"), -1.0, 1.0, 1.0);
+		glUniform1f(prog->getUniform("intensity_2"), 0.2);
+		glUniform1f(prog->getUniform("s"), 200);
+		glUniform3f(prog->getUniform("ka"), 0.2, 0.7, 0.2);
+		glUniform3f(prog->getUniform("kd"), 0, 0, 1);
+		glUniform3f(prog->getUniform("ks"), 0, 1.0, 0);
+
+		MV->pushMatrix();
+		//glUniform3fv(prog->getUniform("kdFront"), 1, Vector3f(1.0, 0.0, 0.0).data());
+		//glUniform3fv(prog->getUniform("kdBack"), 1, Vector3f(1.0, 1.0, 0.0).data());
 		MV->pushMatrix();
 		Vector3d x = getP();
 		MV->translate(x(0), x(1), x(2));
@@ -187,9 +198,8 @@ void WrapCylinder::draw(shared_ptr<MatrixStack> MV, const shared_ptr<Program> pr
 	glUniformMatrix4fv(prog2->getUniform("P"), 1, GL_FALSE, glm::value_ptr(P->topMatrix()));
 	glUniformMatrix4fv(prog2->getUniform("MV"), 1, GL_FALSE, glm::value_ptr(MV->topMatrix()));
 	MV->pushMatrix();
-	glUniformMatrix4fv(prog->getUniform("MV"), 1, GL_FALSE, glm::value_ptr(MV->topMatrix()));
-	glColor3f(0.0, 0.0, 0.0); // black
-	glLineWidth(3);
+	glColor3f(0.8, 0.4, 0.3); 
+	glLineWidth(4);
 	glBegin(GL_LINE_STRIP);
 	glVertex3f(this->point_S(0), this->point_S(1), this->point_S(2));
 
@@ -209,51 +219,4 @@ void WrapCylinder::draw(shared_ptr<MatrixStack> MV, const shared_ptr<Program> pr
 	MV->popMatrix();
 	prog2->unbind();
 
-}
-
-// get
-Vector3d WrapCylinder::getP() const {
-	return this->E_W_0.block<3, 1>(0, 3);
-}
-
-Matrix3d WrapCylinder::getR() const {
-	return this->E_W_0.block<3, 3>(0, 0);
-}
-
-// set
-
-void WrapCylinder::setE(Matrix4d E) {
-	this->E_W_0 = E;
-}
-
-void WrapCylinder::setP(shared_ptr<Particle> _P) {
-	this->P= _P;
-	this->point_P = P->x;
-}
-
-void WrapCylinder::setS(shared_ptr<Particle> _S) {
-	this->S = _S;
-	this->point_S = S->x;
-}
-
-void WrapCylinder::setO(shared_ptr<Particle> _O) {
-	this->O = _O;
-	this->point_O = O->x;
-}
-
-void WrapCylinder::setZ(shared_ptr<Vector> _Z) {
-	this->Z = _Z;
-	this->vec_z = Z->dir;
-}
-
-void WrapCylinder::setNumPoints(int _num_points) {
-	this->num_points = _num_points;
-}
-
-Matrix4d WrapCylinder::getE() const {
-	return this->E_W_0;
-}
-
-Matrix4d WrapCylinder::getE_P_0() const {
-	return this->E_P_0;
 }

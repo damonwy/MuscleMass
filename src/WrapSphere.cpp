@@ -134,18 +134,24 @@ void WrapSphere::step() {
 	compute();
 	if (this->status == wrap) {
 		arc_points = getPoints(num_points);
-		// for heon
-		/*cout << "P" << point_P << endl;
-		cout << "S" << point_S << endl;
-		cout << "O" << point_O << endl;*/
 	}
 }
 
 void WrapSphere::draw(std::shared_ptr<MatrixStack> MV, const std::shared_ptr<Program> prog, const std::shared_ptr<Program> prog2, std::shared_ptr<MatrixStack> P) const {
 
 	prog->bind();
-	glUniform3fv(prog->getUniform("kdFront"), 1, Vector3f(1.0, 0.0, 0.0).data());
-	glUniform3fv(prog->getUniform("kdBack"), 1, Vector3f(1.0, 1.0, 0.0).data());
+	glUniformMatrix4fv(prog->getUniform("P"), 1, GL_FALSE, glm::value_ptr(P->topMatrix()));
+	MV->pushMatrix();
+	glUniform3f(prog->getUniform("lightPos1"), 1.0, 1.0, 1.0);
+	glUniform1f(prog->getUniform("intensity_1"), 0.8);
+	glUniform3f(prog->getUniform("lightPos2"), -1.0, 1.0, 1.0);
+	glUniform1f(prog->getUniform("intensity_2"), 0.2);
+	glUniform1f(prog->getUniform("s"), 200);
+	glUniform3f(prog->getUniform("ka"), 0.2, 0.2, 0.2);
+	glUniform3f(prog->getUniform("kd"), 0, 0, 1);
+	glUniform3f(prog->getUniform("ks"), 0, 1.0, 0);
+	//glUniform3fv(prog->getUniform("kdFront"), 1, Vector3f(1.0, 0.0, 0.0).data());
+	//glUniform3fv(prog->getUniform("kdBack"), 1, Vector3f(1.0, 1.0, 0.0).data());
 
 	// Draw P, Spoints
 	this->P->draw(MV, prog);
@@ -153,6 +159,7 @@ void WrapSphere::draw(std::shared_ptr<MatrixStack> MV, const std::shared_ptr<Pro
 	
 	// Draw Sphere
 	this->O->draw(MV, prog);
+	MV->popMatrix();
 	prog->unbind();
 
 	// Draw wrapping
@@ -160,9 +167,8 @@ void WrapSphere::draw(std::shared_ptr<MatrixStack> MV, const std::shared_ptr<Pro
 	glUniformMatrix4fv(prog2->getUniform("P"), 1, GL_FALSE, glm::value_ptr(P->topMatrix()));
 	glUniformMatrix4fv(prog2->getUniform("MV"), 1, GL_FALSE, glm::value_ptr(MV->topMatrix()));
 	MV->pushMatrix();
-	glUniformMatrix4fv(prog->getUniform("MV"), 1, GL_FALSE, glm::value_ptr(MV->topMatrix()));
-	glColor3f(0.0, 0.0, 0.0); // black
-	glLineWidth(3);
+	glColor3f(0.6, 0.6, 0.5); 
+	glLineWidth(4);
 	glBegin(GL_LINE_STRIP);
 	glVertex3f(this->point_S(0), this->point_S(1), this->point_S(2));
 
@@ -177,21 +183,4 @@ void WrapSphere::draw(std::shared_ptr<MatrixStack> MV, const std::shared_ptr<Pro
 	glEnd();
 	MV->popMatrix();
 	prog2->unbind();
-}
-
-void WrapSphere::setP(shared_ptr<Particle> _P) {
-	this->P = _P;
-}
-
-void WrapSphere::setS(shared_ptr<Particle> _S) {
-	this->S = _S;
-}
-
-void WrapSphere::setO(shared_ptr<Particle> _O) {
-	this->O = _O;
-	this->O->r = this->radius;
-}
-
-void WrapSphere::setParent(shared_ptr<Rigid> _parent) {
-	this->parent = _parent;
 }

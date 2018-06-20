@@ -5,6 +5,7 @@
 
 #include <vector>
 #include <memory>
+#include "Particle.h"
 
 #define EIGEN_DONT_ALIGN_STATICALLY
 #include <Eigen/Dense>
@@ -21,7 +22,7 @@ public:
 	Vector();
 	~Vector();
 	void reset();
-	void setP(std::shared_ptr<Particle> _p);
+	void setP(std::shared_ptr<Particle> _p) { this->p = _p; }
 	void draw(std::shared_ptr<MatrixStack> MV, std::shared_ptr<MatrixStack> P, const std::shared_ptr<Program> p) const;
 	void update(Eigen::Matrix4d E);
 

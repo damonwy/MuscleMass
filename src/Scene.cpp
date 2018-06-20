@@ -169,7 +169,7 @@ shared_ptr<WrapSphere> Scene::addSphere(json jp_x, shared_ptr<Rigid> p_parent, j
 	Vector3d o_x;
 	from_json(jo_x, o_x);
 	auto ws_o = make_shared<Particle>(sphereShape);
-	ws_o->x0 = Vector3d(s_radius + o_parent->getDimension()(0), -0.5 * o_parent->getDimension()(1) + 1.0, 0.0);
+	ws_o->x0 = Vector3d(s_radius + 0.5 * o_parent->getDimension()(0), -0.5 * o_parent->getDimension()(1) + 1.0, 0.0);
 	ws_o->x0 += o_x;
 	ws_o->r = s_radius;
 	ws_o->update(o_parent->getE());
@@ -207,7 +207,7 @@ shared_ptr<WrapCylinder> Scene::addWrapCylinder(json jp_x, shared_ptr<Rigid> p_p
 	auto wc_o = make_shared<Particle>(sphereShape);
 	Vector3d o_x;
 	from_json(jo_x, o_x);
-	wc_o->x0 << cylinder_radius + o_parent->getDimension()(0), -0.5 * o_parent->getDimension()(1) + 1.0, 0.0;
+	wc_o->x0 << cylinder_radius + o_parent->getDimension()(0) * 0.5, -0.5 * o_parent->getDimension()(1) + 1.0, 0.0;
 	wc_o->x0 += o_x;
 	wc_o->r = js["particle_r"];
 	wc_o->setParent(o_parent);
@@ -262,7 +262,7 @@ shared_ptr<WrapDoubleCylinder> Scene::addWrapDoubleCylinder(json jp_x, shared_pt
 	auto wdc_u = make_shared<Particle>(sphereShape);
 	Vector3d u_x;
 	from_json(ju_x, u_x);
-	wdc_u->x0 << u_radius + u_parent->getDimension()(0), -0.5 * u_parent->getDimension()(1) + 1.0, 0.0;
+	wdc_u->x0 << u_radius + 0.5 * u_parent->getDimension()(0), -0.5 * u_parent->getDimension()(1) + 1.0, 0.0;
 	wdc_u->x0 += u_x;
 	wdc_u->r = js["particle_r"];
 	wdc_u->update(u_parent->getE());
@@ -271,7 +271,7 @@ shared_ptr<WrapDoubleCylinder> Scene::addWrapDoubleCylinder(json jp_x, shared_pt
 	auto wdc_v = make_shared<Particle>(sphereShape);
 	Vector3d v_x;
 	from_json(jv_x, v_x);
-	wdc_v->x0 << v_radius + v_parent->getDimension()(0), -0.5 * v_parent->getDimension()(1) + 1.0, 0.0;
+	wdc_v->x0 << v_radius + 0.5 * v_parent->getDimension()(0), -0.5 * v_parent->getDimension()(1) + 1.0, 0.0;
 	wdc_v->x0 += v_x;
 	wdc_v->r = js["particle_r"];
 	wdc_v->update(v_parent->getE());

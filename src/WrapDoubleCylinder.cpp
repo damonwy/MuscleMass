@@ -399,8 +399,19 @@ void WrapDoubleCylinder::draw(shared_ptr<MatrixStack> MV, const shared_ptr<Progr
 
 	if (cylinder_shape) {
 		// Draw U
-		glUniform3fv(prog->getUniform("kdFront"), 1, Vector3f(1.0, 0.0, 0.0).data());
-		glUniform3fv(prog->getUniform("kdBack"), 1, Vector3f(1.0, 1.0, 0.0).data());
+		glUniformMatrix4fv(prog->getUniform("P"), 1, GL_FALSE, glm::value_ptr(P->topMatrix()));
+		MV->pushMatrix();
+		glUniform3f(prog->getUniform("lightPos1"), 1.0, 1.0, 1.0);
+		glUniform1f(prog->getUniform("intensity_1"), 0.8);
+		glUniform3f(prog->getUniform("lightPos2"), -1.0, 1.0, 1.0);
+		glUniform1f(prog->getUniform("intensity_2"), 0.2);
+		glUniform1f(prog->getUniform("s"), 200);
+		glUniform3f(prog->getUniform("ka"), 0.4, 0.3, 0.5);
+		glUniform3f(prog->getUniform("kd"), 0, 0, 1);
+		glUniform3f(prog->getUniform("ks"), 0, 1.0, 0);
+
+		//glUniform3fv(prog->getUniform("kdFront"), 1, Vector3f(1.0, 0.0, 0.0).data());
+		//glUniform3fv(prog->getUniform("kdBack"), 1, Vector3f(1.0, 1.0, 0.0).data());
 		MV->pushMatrix();
 		Vector3d x = getp_U();
 		MV->translate(x(0), x(1), x(2));
@@ -448,9 +459,8 @@ void WrapDoubleCylinder::draw(shared_ptr<MatrixStack> MV, const shared_ptr<Progr
 	glUniformMatrix4fv(prog2->getUniform("P"), 1, GL_FALSE, glm::value_ptr(P->topMatrix()));
 	glUniformMatrix4fv(prog2->getUniform("MV"), 1, GL_FALSE, glm::value_ptr(MV->topMatrix()));
 	MV->pushMatrix();
-	glUniformMatrix4fv(prog->getUniform("MV"), 1, GL_FALSE, glm::value_ptr(MV->topMatrix()));
-	glColor3f(0.0, 0.0, 0.0); // black
-	glLineWidth(3);
+	glColor3f(0.3, 0.4, 0.5);
+	glLineWidth(4);
 
 	glBegin(GL_LINE_STRIP);
 	glVertex3f(this->point_P(0), this->point_P(1), this->point_P(2));

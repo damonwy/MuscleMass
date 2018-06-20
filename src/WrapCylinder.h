@@ -10,6 +10,9 @@
 #include <vector>
 #include <memory>
 
+#include "Vector.h"
+#include "Particle.h"
+
 #define EIGEN_DONT_ALIGN_STATICALLY
 #include <Eigen/Dense>
 class Particle;
@@ -84,18 +87,18 @@ public:
 	void draw(std::shared_ptr<MatrixStack> MV, const std::shared_ptr<Program> prog, const std::shared_ptr<Program> prog2, std::shared_ptr<MatrixStack> P) const;
 
 	// get
-	Eigen::Vector3d getP() const;
-	Eigen::Matrix3d getR() const;
-	Eigen::Matrix4d getE() const;
-	Eigen::Matrix4d getE_P_0() const;
+	Eigen::Vector3d getP() const { return this->E_W_0.block<3, 1>(0, 3); }
+	Eigen::Matrix3d getR() const { return this->E_W_0.block<3, 3>(0, 0); }
+	Eigen::Matrix4d getE() const { return this->E_W_0; }
+	Eigen::Matrix4d getE_P_0() const { return this->E_P_0; }
 
 	// set
-	void setE(Eigen::Matrix4d E);
-	void setP(std::shared_ptr<Particle> _P);
-	void setS(std::shared_ptr<Particle> _S);
-	void setO(std::shared_ptr<Particle> _O);
-	void setZ(std::shared_ptr<Vector> _Z);
-	void setNumPoints(int _num_points);
+	void setE(Eigen::Matrix4d E) { this->E_W_0 = E; }
+	void setP(std::shared_ptr<Particle> _P) { this->P = _P; this->point_P = P->x; }
+	void setS(std::shared_ptr<Particle> _S) { this->S = _S; this->point_S = S->x; }
+	void setO(std::shared_ptr<Particle> _O) { this->O = _O; this->point_O = O->x; }
+	void setZ(std::shared_ptr<Vector> _Z) { this->Z = _Z; this->vec_z = Z->dir; }
+	void setNumPoints(int _num_points) { this->num_points = _num_points; }
 
 	double r; // radius
 

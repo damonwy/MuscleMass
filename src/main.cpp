@@ -106,20 +106,39 @@ static void init()
 	progSimple->addUniform("MV");
 	//progSimple->setVerbose(false);
 	
+	//prog = make_shared<Program>();
+	//prog->setVerbose(true); // Set this to true when debugging.
+	//prog->setShaderNames(RESOURCE_DIR + "phong_vert.glsl", RESOURCE_DIR + "phong_frag.glsl");
+	//prog->init();
+	//prog->addUniform("P");
+	//prog->addUniform("MV");
+	//prog->addUniform("kdFront");
+	//prog->addUniform("kdBack");
+	//prog->addAttribute("aPos");
+	//prog->addAttribute("aNor");
+	//prog->setVerbose(false);
+	
 	prog = make_shared<Program>();
 	prog->setVerbose(true); // Set this to true when debugging.
-	prog->setShaderNames(RESOURCE_DIR + "phong_vert.glsl", RESOURCE_DIR + "phong_frag.glsl");
+	prog->setShaderNames(RESOURCE_DIR + "vert.glsl", RESOURCE_DIR + "frag.glsl");
 	prog->init();
 	prog->addUniform("P");
 	prog->addUniform("MV");
-	prog->addUniform("kdFront");
-	prog->addUniform("kdBack");
 	prog->addAttribute("aPos");
 	prog->addAttribute("aNor");
+
+	prog->addUniform("intensity_1");
+	prog->addUniform("lightPos1");
+	prog->addUniform("lightPos2");
+	prog->addUniform("intensity_2");
+	prog->addUniform("ka");
+	prog->addUniform("kd");
+	prog->addUniform("ks");
+	prog->addUniform("s");
 	//prog->setVerbose(false);
-	
+
 	camera = make_shared<Camera>();
-	camera->setInitDistance(30.0f);
+	camera->setInitDistance(30.5f);
 
 	scene = make_shared<Scene>();
 	scene->load(RESOURCE_DIR);
@@ -209,11 +228,7 @@ void render()
 
 	// Draw scene
 	prog->bind();
-	glUniformMatrix4fv(prog->getUniform("P"), 1, GL_FALSE, glm::value_ptr(P->topMatrix()));
-	MV->pushMatrix();
 	scene->draw(MV, prog, progSimple, P);
-	MV->popMatrix();
-	prog->unbind();
 	
 	//////////////////////////////////////////////////////
 	// Cleanup
