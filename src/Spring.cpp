@@ -169,7 +169,7 @@ void Spring::updateSamplesJacobian(vector<shared_ptr<Joint>> joints) {
 
 			Vector3d p_nopert = sample->x;
 			Vector3d p_pert = (1 - s) * p0->getTempPos() + s * p1->getTempPos();
-
+			//Vector3d p_pert = (1 - s) * p0->getTempPos() + s * p1->x;
 			Vector3d diff = (p_pert - sample->x) / epsilon;
 			sample->setJacobianMatrixCol(diff, 0);
 		}
@@ -388,8 +388,6 @@ void Spring::draw(std::shared_ptr<MatrixStack> MV, const std::shared_ptr<Program
 	glUniform3f(prog->getUniform("ka"), 0.9, 0.5, 0.2);
 	glUniform3f(prog->getUniform("kd"), 0, 0, 1);
 	glUniform3f(prog->getUniform("ks"), 0, 1.0, 0);
-	//glUniform3fv(prog->getUniform("kdFront"), 1, Vector3f(1.0, 0.0, 0.0).data());
-	//glUniform3fv(prog->getUniform("kdBack"), 1, Vector3f(1.0, 1.0, 0.0).data());
 
 	// Draw P, Spoints
 	this->p0->draw(MV, prog);

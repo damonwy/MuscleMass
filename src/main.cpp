@@ -105,19 +105,7 @@ static void init()
 	progSimple->addUniform("P");
 	progSimple->addUniform("MV");
 	//progSimple->setVerbose(false);
-	
-	//prog = make_shared<Program>();
-	//prog->setVerbose(true); // Set this to true when debugging.
-	//prog->setShaderNames(RESOURCE_DIR + "phong_vert.glsl", RESOURCE_DIR + "phong_frag.glsl");
-	//prog->init();
-	//prog->addUniform("P");
-	//prog->addUniform("MV");
-	//prog->addUniform("kdFront");
-	//prog->addUniform("kdBack");
-	//prog->addAttribute("aPos");
-	//prog->addAttribute("aNor");
-	//prog->setVerbose(false);
-	
+
 	prog = make_shared<Program>();
 	prog->setVerbose(true); // Set this to true when debugging.
 	prog->setShaderNames(RESOURCE_DIR + "vert.glsl", RESOURCE_DIR + "frag.glsl");

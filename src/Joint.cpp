@@ -40,12 +40,6 @@ VectorXd Joint::getThetadotVector(vector<shared_ptr<Joint>> joints) {
 	return thetadotlist;
 }
 
-void Joint::setThetaVector(vector<shared_ptr<Joint>> joints, VectorXd thetalist) {
-	for (int i = 0; i < (int)joints.size(); ++i) {
-		joints[i]->setTheta(thetalist(i));
-	}
-}
-
 void Joint::setThetadotVector(vector <shared_ptr<Joint>> joints, VectorXd thetadotlist) {	
 	for (int i = 0; i < (int)joints.size(); ++i) {
 		joints[i]->setThetadot(thetadotlist(i));

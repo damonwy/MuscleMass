@@ -94,8 +94,10 @@ void Rigid::step(double h) {
 }
 
 void Rigid::setSingleJointAngle(double _theta) {
-	this->joint->reset();
-	this->joint->setTheta(_theta);
+	// Only used in reduced coord, use this func instead of setJointAngle() for computing a single joint angle.
+	// Because it uses the parent's current position.
+	// Don't update any setting of current state, it will change the drawing
+
 	if (isReduced) {
 		if (i != 0) {
 			double theta = _theta;
@@ -103,15 +105,13 @@ void Rigid::setSingleJointAngle(double _theta) {
 			R.setIdentity();
 			R.block<2, 2>(0, 0) << cos(theta), -sin(theta),
 				sin(theta), cos(theta);
-			Matrix4d E_C_J_new = joint->getE_C_J() * R.inverse();
-			// Update joint
-			joint->setE_C_J(E_C_J_new);
-			Matrix4d E_J_C = joint->getE_C_J().inverse();
-			Matrix4d E_P_J = joint->getE_P_J();
+			Matrix4d E_C_J_new = joint->getE_C_J_0() * R.inverse();
+			Matrix4d E_J_C = E_C_J_new.inverse();
+			Matrix4d E_P_J = joint->getE_P_J_0();
 			Matrix4d E_W_P = parent->getE();
 			Matrix4d E_W_C = E_W_P * E_P_J * E_J_C;
 			this->E_W_0_temp = E_W_C;
-			// Update temporary points position
+			// Update temporary points position, for finite difference computing
 			updateTempPoints();
 		}
 	}
@@ -119,9 +119,10 @@ void Rigid::setSingleJointAngle(double _theta) {
 
 
 void Rigid::setJointAngle(double _theta, bool isDrawing) {
-	// Only used in reduced coord
-	this->joint->reset();
-	this->joint->setTheta(_theta);
+	// Only used in reduced coord, use this func instead of setSingleJointAngle() for computing a list of ordered joint angles.
+	// Because it uses the parent's temporary position.
+	// Don't update any setting of current state, it will change the drawing
+
 	if (isReduced) {
 		// Use reduced positions
 		if (i != 0) {
@@ -131,19 +132,16 @@ void Rigid::setJointAngle(double _theta, bool isDrawing) {
 			R.block<2, 2>(0, 0) << cos(theta), -sin(theta),
 				sin(theta), cos(theta);
 
-			Matrix4d E_C_J_new = joint->getE_C_J() * R.inverse();
-			// Update joint
-			joint->setE_C_J(E_C_J_new);
-
-			Matrix4d E_J_C = joint->getE_C_J().inverse();
+			Matrix4d E_C_J_new = joint->getE_C_J_0() * R.inverse();
+			Matrix4d E_J_C = E_C_J_new.inverse();
 			Matrix4d E_P_J = joint->getE_P_J();
 			Matrix4d E_W_P = parent->getEtemp();
 			Matrix4d E_W_C = E_W_P * E_P_J * E_J_C;
-			//Matrix4d E_W_C = E_W_P * E_P_J * R * E_J_C;
 			this->E_W_0_temp = E_W_C;
-			// Update temporary points position
+			// Update temporary points position, for finite difference computing
 			updateTempPoints();
 
+			// Better if I put this elsewhere
 			if (isDrawing) {
 				this->E_W_0 = E_W_0_temp;
 				updateSpheres();

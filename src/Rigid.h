@@ -52,7 +52,6 @@ public:
 	void setJoint(std::shared_ptr<Joint> _joint) { this->joint = _joint; }
 	void setRotationAngle(double _dtheta) { this->joint->setDTheta(_dtheta); }
 	void setThetadot(double _thetadot) { this->joint->setThetadot(_thetadot); }
-	void setAngle(double _theta) { this->joint->setTheta(_theta); }
 
 	void addPoint(std::shared_ptr<Particle> _point) { this->points.push_back(_point); }
 	void addChild(std::shared_ptr<Rigid> _child) { this->children.push_back(_child); }

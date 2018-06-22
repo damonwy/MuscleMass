@@ -137,18 +137,18 @@ void SymplecticIntegrator::step(double h) {
 		
 		// Compute the inertia matrix of spring using finite difference 
 		MatrixXd M_s = Spring::computeMassMatrix(springs, (int)boxes.size(), isReduced);
-		cout << "mS" << M_s << endl;
+		//cout << "mS" << M_s << endl;
 		x.setZero();
 		MatrixXd JJ = J.block(0, n - num_joints, m, num_joints);
 		
 		A = JJ.transpose() * M * JJ;
 		A += M_s;
-		cout << "A" << A << endl;
+		//cout << "A" << A << endl;
 		VectorXd b_s = Spring::computeGravity(springs, (int)boxes.size(), isReduced);
 	
 		x.segment(6, num_joints) = A.ldlt().solve(b.segment(6, num_joints) + b_s * h + M_s * thetadotlist);	// thetadot
 
-		cout << x.segment(6, num_joints) << endl << endl;
+		//cout << x.segment(6, num_joints) << endl << endl;
 		VectorXd phi = JJ * x.segment(6, num_joints);
 
 		// For QP

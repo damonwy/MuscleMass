@@ -48,7 +48,7 @@ void Scene::load(const string &RESOURCE_DIR)
 {	
 	// Init shapes
 	boxShape = make_shared<Shape>();
-	boxShape->loadMesh(RESOURCE_DIR + "box2.obj");
+	boxShape->loadMesh(RESOURCE_DIR + "box5.obj");
 	sphereShape = make_shared<Shape>();
 	sphereShape->loadMesh(RESOURCE_DIR + "sphere2.obj");
 	cylinderShape = make_shared<Shape>();
@@ -379,32 +379,34 @@ void Scene::saveData(int num_steps) {
 	// Save data and plot in MATLAB
 	Kvec.push_back(K);
 	Vvec.push_back(V);
-	Tvec.push_back(step_i);
-	Twist_vec.push_back(phi);
+	Tvec.push_back(t);
 
 	if (step_i == num_steps) {
 		cout << "finished" << endl;
 		VectorXd Kv;
 		VectorXd Vv;
 		VectorXd Tv;
-		VectorXd Twistv;
 
 		Kv.resize(Kvec.size());
 		Vv.resize(Vvec.size());
 		Tv.resize(Tvec.size());
-		Twistv.resize(12 * Twist_vec.size());
 
 		for (int i = 0; i < Kvec.size(); i++) {
 			Kv(i) = Kvec[i];
 			Vv(i) = Vvec[i];
 			Tv(i) = Tvec[i];
-			Twistv.segment<12>(12 * i) = Twist_vec[i];
 		}
-
-		vec_to_file(Kv, "K");
-		vec_to_file(Vv, "V");
-		vec_to_file(Tv, "T");
-		vec_to_file(Twistv, "Twistv");
+		bool isReduced = js["isReduced"];
+		if (isReduced) {
+			vec_to_file(Kv, "Kr");
+			vec_to_file(Vv, "Vr");
+			vec_to_file(Tv, "Tr");
+		}
+		else {
+			vec_to_file(Kv, "Km");
+			vec_to_file(Vv, "Vm");
+			vec_to_file(Tv, "Tm");
+		}		
 	}
 }
 
@@ -432,9 +434,6 @@ void Scene::computeEnergy() {
 		V0 = V;
 		K0 = K;
 	}
-	//cout << V0 - V << endl;
-	//cout << K - K0 << endl;
-	//cout << V0 - V + K - K0 << endl;
 }
 
 void Scene::draw(shared_ptr<MatrixStack> MV, const shared_ptr<Program> prog, const shared_ptr<Program> prog2, shared_ptr<MatrixStack> P) const
