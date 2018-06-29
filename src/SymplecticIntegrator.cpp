@@ -91,7 +91,7 @@ MatrixXd SymplecticIntegrator::getJ_twist_thetadot() {
 			Matrix6d Ad_J_P = Rigid::adjoint(joint->getE_P_J().inverse());
 			Matrix6d Ad_C_P = Ad_C_J * Ad_J_P;
 			Vector6d Adz_C_J = Ad_C_J * z;
-
+			
 			J.block<6, 6>(j, 0) = Ad_C_P;
 			J.block<6, 1>(j, 5 + i) = Adz_C_J;
 			j = j + 6;
@@ -123,6 +123,7 @@ void SymplecticIntegrator::step(double h) {
 		f.setZero();
 
 		VectorXd thetadotlist = Joint::getThetadotVector(joints);
+		VectorXd thetalist = Joint::getThetaVector(joints);
 
 		J = getJ_twist_thetadot();
 
@@ -131,6 +132,9 @@ void SymplecticIntegrator::step(double h) {
 			f.segment<6>(6 * i) = box->getMassMatrix() * box->getTwist() + h * box->getForce();
 			//f.segment<6>(6 * i) = h * box->getForce();
     		}
+
+		//cout << "M" << M << endl;
+		//cout << "J" << J << endl;
 
 		A = J.transpose() * M * J;
 		b = J.transpose() * f;
@@ -142,6 +146,40 @@ void SymplecticIntegrator::step(double h) {
 		MatrixXd JJ = J.block(0, n - num_joints, m, num_joints);
 		
 		A = JJ.transpose() * M * JJ;
+		//mat_to_file(J, "J");
+		//mat_to_file(M, "M");
+		//mat_to_file(A, "A");
+		
+		// Check I1 and I2
+		MatrixXd I1, I2;
+		I1.resize(2, 2);
+		I2.resize(2, 2);
+		I1.setZero(); 
+		double l = 4.0;
+		double r = 0.1 * l;
+		I1(0, 0) = l * l;
+		I1 *= 4.2 / 3.0;
+
+		//I2 << 1 + 3.0 * l * l + 3 * l * cos(thetalist(1)), 1 + 3.0 / 2.0 * l * cos(thetalist(1)),
+		//	1 + 3.0 / 2.0 * l * cos(thetalist(1)), 1.0;
+		//I2 << 1 + 2 * cos(thetalist(1)), 1 + cos(thetalist(1)), 1 + cos(thetalist(1)), 1;
+		I2 << 4.0 * l * l + 3 * l * l* cos(thetalist(1)), l * l + 3.0 / 2.0 * l *l* cos(thetalist(1)),
+			l * l + 3.0 / 2.0 * l * l * cos(thetalist(1)), l * l ;
+
+
+		I2 *= 4.2/ 3.0;
+
+
+		//I2 *= 4.2 / 3.0;
+		MatrixXd I12 = I1 + I2;
+		//mat_to_file(I1, "I1");
+		//mat_to_file(I2, "I2");
+
+		cout << "shouldbe:" << I12 << endl;
+		cout << "computed:" << A << endl;
+
+
+
 		A += M_s;
 		//cout << "A" << A << endl;
 		VectorXd b_s = Spring::computeGravity(springs, (int)boxes.size(), isReduced);
