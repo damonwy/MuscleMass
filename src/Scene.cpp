@@ -99,6 +99,19 @@ void Scene::load(const string &RESOURCE_DIR)
 	for (int i = 0; i < (int)springs.size(); ++i) {
 		springs[i]->step(joints);
 	}
+
+	K0 = 0.0;
+	V0 = 0.0;
+
+	// Rigid Body:
+	for (int i = 0; i < (int)boxes.size(); ++i) {
+		double vi = boxes[i]->getPotentialEnergy();
+		double ki = boxes[i]->getKineticEnergy();
+		V0 += vi;
+		K0 += ki;
+	}
+	cout << V0 << endl;
+	cout << K0 << endl;
 }
 
 shared_ptr<Joint> Scene::addJoint(shared_ptr<Rigid> parent, shared_ptr<Rigid> child, json jE_P_J, json jmin_theta, json jmax_theta) {
@@ -345,6 +358,9 @@ void Scene::reset()
 
 void Scene::step()
 {
+	if (step_i == 1) {
+		cout << "start" << endl;
+	}
 	if (time_integrator == SYMPLECTIC) {
 		symplectic_solver->step(h);
 		for (int i = 0; i < (int)boxes.size(); ++i) {
@@ -364,7 +380,7 @@ void Scene::step()
 	}else{
 		// nothing
 	}
-
+	//cout << "t" << t << endl;
 	t += h;
 	step_i += 1;
 	computeEnergy();
@@ -377,10 +393,12 @@ void Scene::step()
 
 void Scene::saveData(int num_steps) {
 	// Save data and plot in MATLAB
-	Kvec.push_back(K);
-	Vvec.push_back(V);
-	Tvec.push_back(t);
-
+	if (step_i % 1000 == 0) {
+		Kvec.push_back(K);
+		Vvec.push_back(V);
+		Tvec.push_back(t);
+	}
+	
 	if (step_i == num_steps) {
 		cout << "finished" << endl;
 		VectorXd Kv;
@@ -411,16 +429,37 @@ void Scene::saveData(int num_steps) {
 }
 
 void Scene::computeEnergy() {
+	//cout << "V" << V << endl;
+
+	double vvv = V;
+
 	K = 0.0;
 	V = 0.0;
 
 	// Rigid Body:
 	for (int i = 0; i < (int)boxes.size(); ++i) {
 		double vi = boxes[i]->getPotentialEnergy();
+		//cout << "p" << boxes[i]->getP()(1) << endl;
 		double ki = boxes[i]->getKineticEnergy();
 		V += vi;
 		K += ki;
+		//cout <<" i " << i<<endl<< vi << endl;
+		//cout << " i " << i<<endl << ki << endl;
 	}	
+	VectorXd angles = Joint::getThetaVector(joints);
+	//cout <<"angles"<< angles << endl;
+
+	//cout << sin(90) << endl;
+	//angles *= 1.0 / 2.0 / 3.1415926 * 360;
+	double h1 = 2.0 * sin(angles(0));
+	double h2 = 2 * h1 + 2 * sin(angles(0) + angles(1));
+	double v1 = - 4.2 * 9.81 * h1;
+	double v2 = - 4.2 * 9.81 * h2;
+
+	//cout << "h1 " << h1 << endl;
+	//cout << "h2 " << h2 << endl;
+	//cout << "v1 + v2" << v1 + v2 << endl;
+	
 
 	// Spring:
 	for (int i = 0; i < (int)springs.size(); ++i) {
@@ -428,12 +467,10 @@ void Scene::computeEnergy() {
 		double ki = springs[i]->getKineticEnergy();
 		V += vi;
 		K += ki;
+		
 	}
-
-	if (step_i == 1) {
-		V0 = V;
-		K0 = K;
-	}
+	//cout << V-V0 << endl;
+	//cout << K << endl;
 }
 
 void Scene::draw(shared_ptr<MatrixStack> MV, const shared_ptr<Program> prog, const shared_ptr<Program> prog2, shared_ptr<MatrixStack> P) const

@@ -32,7 +32,8 @@ public:
 	void step(double h);
 	void draw(std::shared_ptr<MatrixStack> MV, const std::shared_ptr<Program> prog, const std::shared_ptr<Program> prog2, std::shared_ptr<MatrixStack> P) const;
 	void computeForces();	  // Use current E
-	void computeTempForces(); // Use temporary E
+	void computeEnergy();
+	Vector6d computeTempForces(); // Use temporary E
 
 	// set
 	void setIndex(int _i){ this->i = _i; }

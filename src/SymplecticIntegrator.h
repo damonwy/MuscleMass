@@ -21,6 +21,9 @@ public:
 	void step(double h);
 	void draw(std::shared_ptr<MatrixStack> MV, const std::shared_ptr<Program> prog, std::shared_ptr<MatrixStack> P) const;
 	Eigen::MatrixXd getJ_twist_thetadot();
+	Eigen::MatrixXd getGlobalJacobian(Eigen::VectorXd thetalist);
+	Eigen::MatrixXd getMassMatrix(std::vector<std::shared_ptr<Rigid>> _boxes);
+	Eigen::VectorXd getForce(Eigen::VectorXd thetalist, Eigen::VectorXd thetadotlist, Eigen::MatrixXd J);
 	virtual ~SymplecticIntegrator();
 
 	double m;
@@ -29,6 +32,7 @@ public:
 
 private:
 	std::vector< std::shared_ptr<Rigid> > boxes;
+	std::vector < std::shared_ptr<Rigid> > moving_boxes;
 	std::vector< std::shared_ptr<Spring> > springs;
 	std::vector< std::shared_ptr<Joint> > joints;
 	Eigen::MatrixXd A;

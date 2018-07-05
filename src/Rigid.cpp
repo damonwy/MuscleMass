@@ -47,6 +47,9 @@ Rigid::Rigid(const shared_ptr<Shape> s, Matrix3d _R, Vector3d _p, Vector3d _dime
 					  0, 0, 0, m, 0, 0,
 					  0, 0, 0, 0, m, 0,
 					  0, 0, 0, 0, 0, m;
+
+	computeForces();
+	computeEnergy();
 }
 
 void Rigid::step(double h) {
@@ -78,8 +81,9 @@ void Rigid::step(double h) {
 	}
 
 	// Energy Update
-	this->V = this->m * grav.transpose() * this->getP();
-	this->K = 0.5 * this->twist.transpose() * mass_mat * this->twist;
+	//this->V = this->m * grav.transpose() * this->getP();
+	//this->K = 0.5 * this->twist.transpose() * mass_mat * this->twist;
+	computeEnergy();
 
 	// Joint Update
 	if (i != 0) {
@@ -91,6 +95,11 @@ void Rigid::step(double h) {
 	updateCylinders();
 	updateDoubleCylinders();
 	updatePoints();	
+}
+
+void Rigid::computeEnergy() {
+	this->V = this->m * grav.transpose() * this->getP();
+	this->K = 0.5 * this->twist.transpose() * mass_mat * this->twist;
 }
 
 void Rigid::setSingleJointAngle(double _theta) {
@@ -370,7 +379,7 @@ void Rigid::computeForces() {
 	this->force = coriolis_forces + body_forces;
 }
 
-void Rigid::computeTempForces() {
+Vector6d Rigid::computeTempForces() {
 	
 	// Use E_W_0_temp computed from ODE input theta to get temporary force in that position 
 	// Make sure before using this func, twist is updated to the temporary one
@@ -385,6 +394,7 @@ void Rigid::computeTempForces() {
 	Matrix3d R = E_W_0_temp.block<3, 3>(0, 0);
 	body_forces.segment<3>(3) = m * R.transpose() * grav;
 	this->force = coriolis_forces + body_forces;
+	return this->force;
 }
 
 void Rigid::tare()
