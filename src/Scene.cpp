@@ -357,7 +357,7 @@ void Scene::reset()
 }
 
 void Scene::step()
-{
+{	
 	if (step_i == 1) {
 		cout << "start" << endl;
 	}
@@ -380,7 +380,7 @@ void Scene::step()
 	}else{
 		// nothing
 	}
-	//cout << "t" << t << endl;
+	cout << "t   " << t << endl;
 	t += h;
 	step_i += 1;
 	computeEnergy();
@@ -393,7 +393,7 @@ void Scene::step()
 
 void Scene::saveData(int num_steps) {
 	// Save data and plot in MATLAB
-	if (step_i % 1000 == 0) {
+	if (step_i % 1 == 0) {
 		Kvec.push_back(K);
 		Vvec.push_back(V);
 		Tvec.push_back(t);

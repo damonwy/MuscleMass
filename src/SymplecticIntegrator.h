@@ -22,8 +22,6 @@ public:
 	void draw(std::shared_ptr<MatrixStack> MV, const std::shared_ptr<Program> prog, std::shared_ptr<MatrixStack> P) const;
 	Eigen::MatrixXd getJ_twist_thetadot();
 	Eigen::MatrixXd getGlobalJacobian(Eigen::VectorXd thetalist);
-	Eigen::MatrixXd getMassMatrix(std::vector<std::shared_ptr<Rigid>> _boxes);
-	Eigen::VectorXd getForce(Eigen::VectorXd thetalist, Eigen::VectorXd thetadotlist, Eigen::MatrixXd J);
 	virtual ~SymplecticIntegrator();
 
 	double m;
@@ -41,6 +39,7 @@ private:
 	Eigen::VectorXd x;
 	Eigen::VectorXd b;
 	Eigen::VectorXd f;
+	Eigen::VectorXd ftest;
 	double epsilon;
 	bool isReduced;
 	Eigen::Vector3d grav;

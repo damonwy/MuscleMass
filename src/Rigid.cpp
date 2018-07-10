@@ -59,7 +59,7 @@ void Rigid::step(double h) {
 	if (isReduced) {
 		// Use reduced positions
 		if (i != 0) {
-			Matrix4d E_J_C = joint->getE_C_J().inverse();
+			/*Matrix4d E_J_C = joint->getE_C_J().inverse();
 			double dtheta = joint->getDTheta();
 			
 			Matrix4d R;
@@ -67,6 +67,17 @@ void Rigid::step(double h) {
 			R.block<2, 2>(0, 0) << cos(dtheta), -sin(dtheta),
 				sin(dtheta), cos(dtheta);
 
+			Matrix4d E_P_J = joint->getE_P_J();
+			Matrix4d E_W_P = parent->getE();
+			Matrix4d E_W_C = E_W_P * E_P_J * R * E_J_C;
+			this->E_W_0 = E_W_C;*/
+			Matrix4d E_J_C = joint->getE_C_J_0().inverse();
+			double dtheta = joint->getTheta();
+
+			Matrix4d R;
+			R.setIdentity();
+			R.block<2, 2>(0, 0) << cos(dtheta), -sin(dtheta),
+				sin(dtheta), cos(dtheta);
 			Matrix4d E_P_J = joint->getE_P_J();
 			Matrix4d E_W_P = parent->getE();
 			Matrix4d E_W_C = E_W_P * E_P_J * R * E_J_C;
@@ -79,7 +90,7 @@ void Rigid::step(double h) {
 			this->E_W_0 = integrate(E_W_0, twist, h);
 		}	
 	}
-
+	computeForces();
 	// Energy Update
 	//this->V = this->m * grav.transpose() * this->getP();
 	//this->K = 0.5 * this->twist.transpose() * mass_mat * this->twist;
