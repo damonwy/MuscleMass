@@ -380,7 +380,7 @@ void Scene::step()
 	}else{
 		// nothing
 	}
-	cout << "t   " << t << endl;
+	//cout << "t   " << t << endl;
 	t += h;
 	step_i += 1;
 	computeEnergy();

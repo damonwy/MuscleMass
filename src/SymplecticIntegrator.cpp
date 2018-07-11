@@ -49,11 +49,15 @@ SymplecticIntegrator::SymplecticIntegrator(vector< shared_ptr<Rigid> > _boxes, v
 		M.resize(m, m);	
 		J.resize(m, n);
 		f.resize(m);
+		f_b.resize(m);
+		f_c.resize(m);
 		ftest.resize(m);
 		M.setZero();
 		J.setZero();
 		f.setZero();
 		ftest.setZero();
+		f_b.setZero();
+		f_c.setZero();
 	}
 	else {
 		m = 6 * (int)boxes.size();
@@ -166,14 +170,16 @@ void SymplecticIntegrator::step(double h) {
 		M.setZero();
 		J.setZero();
 		f.setZero();
+		f_b.setZero();
+		f_c.setZero();
 		ftest.setZero();
 
 		// Input
 		VectorXd thetadotlist = Joint::getThetadotVector(joints);
 		VectorXd thetalist = Joint::getThetaVector(joints);
-		cout << "input" << endl;
-		cout << thetadotlist << endl;
-		cout << thetalist << endl;
+		//cout << "input" << endl;
+		//cout << thetadotlist << endl;
+		//cout << thetalist << endl;
 
 		// Matlab Solution
 		double c1 = cos(3.1415926 / 2.0 + thetalist(0));
@@ -182,56 +188,83 @@ void SymplecticIntegrator::step(double h) {
 		double s2 = sin(thetalist(1));
 		double c12 = cos(thetalist(0) + 3.1415926 / 2.0 + thetalist(1));
 		double s12 = sin(thetalist(0) + 3.1415926 / 2.0 + thetalist(1));
+		double mu1 = 1.0;
+		double mu2 = 1.0;
+		double mum = 1.0;
+		double l = 1.0;
+		double r = 0.1;
+		double bigm = 4.2;
+		double bigl = 4.0;
 
 		Matrix2d I1;
 		I1.setZero();
-		I1(0, 0) = 1.0 / 3.0 * 1.0 * 1.0;
+		I1(0, 0) = mu1 / 3.0 * l * l;
 
 		Matrix2d I2;
 		I2.setZero();
-		I2 << 1 + 3 * 1.0 * (1.0 + c2), 1 + 1.5 * 1.0 * c2, 1 + 1.5 * 1.0 * c2, 1.0;
-		I2 *= 1.0 / 3.0;
+		I2 << 1 + 3 * l * (l + c2), 1 + 1.5 * l * c2, 1 + 1.5 * l * c2, 1.0;
+		I2 *= mu2 / 3.0;
 
 		Matrix2d Im;
 		Im.setZero();
-		Im << 1.0 * 1.0 + 0.1 * 0.1 + 2 * 1.0 * 0.1 * c2, 0.1 * 0.1 + 1.0 * 0.1 * c2, 0.1 * 0.1 + 1.0 * 0.1 * c2, 0.1 * 0.1;
-		Im *= 1.0 / 3.0;
+		Im << l * l + r * r + 2 * l * r * c2, r * r + l * r * c2, r * r + l * r * c2, r * r;
+		Im *= mum / 3.0;
 
-		Matrix2d Iall = 4.2 * 4.0 * 4.0 * (I1 + I2 + Im);
+		Matrix2d Iall = bigm * bigl * bigl * (I1 + I2 + Im);
+
 		Matrix2d temp0, temp1;
 		temp0 << 1.0, 0.5, 0.5, 0.0;
 		temp1 << 2.0, 1.0, 1.0, 0.0;
 
-		Matrix2d dIdtheta2 = -s2 * (temp0 + 1.0 / 3.0 * 0.1 * temp1);
+		Matrix2d dIdtheta2 = -s2 * (mu2 * l * temp0 + mum / 3.0 * l * r * temp1);
 		Vector2d fk = -thetadotlist(1) * dIdtheta2 * thetadotlist;
 		fk(1) = fk(1) + 0.5 * thetadotlist.transpose() * dIdtheta2 * thetadotlist;
 		
 		Vector2d fv1, fv2;
-		fv1 << -0.5 * 9.81 * s1, 0.0;
+		fv1 << -0.5 * mu1 * 9.81 * l * s1, 0.0;
 		
-		fv2 << 2 * s1 + s12, s12;
-		fv2 *= -0.5 * 9.81;
+		fv2 << 2 * l * s1 + s12, s12;
+		fv2 *= -0.5 * mu2 * 9.81;
 		
 		Vector2d fvm;
-		fvm << s1 + 0.1 * s12, 0.1 *s12;
-		fvm *= -0.5 * 9.81;
+		fvm << l * s1 + r * s12, r *s12;
+		fvm *= -0.5 * mum * 9.81;
 		
-		Vector2d fall = 4.2 * 4.0 *4.0 * fk + 4.2 * 4.0 * (fv1 + fv2 + fvm);
+		Vector2d fall = bigm * bigl * bigl * fk + bigm * bigl * (fv1 + fv2 + fvm);
 		Vector2d thetaddot_matlab = Iall.ldlt().solve(fall);
 		// End of Matlab solution
-		
-		J = getJ_twist_thetadot();
-		MatrixXd Jtest = getGlobalJacobian(thetalist);
-
 		for (int i = 0; i < (int)boxes.size(); i++) {
 			auto box = boxes[i];
 			//f.segment<6>(6 * i) = box->getMassMatrix() * box->getTwist() + h * box->getForce();
 			f.segment<6>(6 * i) = box->getForce();
+			f_b.segment<6>(6 * i) = box->getBodyForce();
+			f_c.segment<6>(6 * i) = box->getCoriolisForce();
 			ftest.segment<6>(6 * i) = box->getMassMatrix() * box->getTwist() + h * box->getForce();
-    	}
+			//cout << box->getTwist() << endl;
+		}
+
+
+		J = getJ_twist_thetadot();
+		//cout << "Jcomp" << J << endl;
+		VectorXd testtest(8);
+		testtest.setZero();
+		testtest.segment<2>(6) = thetadotlist;
+		cout << "computed phi" << J * testtest << endl;
+
+
+		MatrixXd Jtest = getGlobalJacobian(thetalist);
+
+		
 	
 		A = J.transpose() * M * J;
 		b = J.transpose() * f;
+		
+		VectorXd b_b = J.transpose() * f_b;
+		VectorXd b_c = J.transpose() * f_c;
+		cout << "b_b" << b_b << endl;
+		cout << "b_c" << b_c << endl;
+		cout << "fk" << bigm * bigl * bigl * fk << endl;
+		cout << "fv" << bigm * bigl * (fv1 + fv2) << endl;
 		
 		// Compute the inertia matrix of spring using finite difference 
 		MatrixXd M_s = Spring::computeMassMatrix(springs, (int)boxes.size(), isReduced);
@@ -240,6 +273,8 @@ void SymplecticIntegrator::step(double h) {
 		MatrixXd JJ = J.block(0, n - num_joints, m, num_joints);
 		//JJ.block<12, 2>(6, 0) = Jtest;
 		A = JJ.transpose() * M * JJ;
+		VectorXd bnew = JJ.transpose() * f;
+		
 
 		VectorXd bb = J.transpose() * ftest;
 	
@@ -250,18 +285,24 @@ void SymplecticIntegrator::step(double h) {
 		//x.segment(6, num_joints) = A.ldlt().solve(b.segment(6, num_joints) + b_s * h + M_s * thetadotlist);	// thetadot
 		x.segment(6, num_joints) = A.ldlt().solve(b.segment(6, num_joints) + b_s);	// thetaddot
 		xtest.segment(6, num_joints) = A.ldlt().solve(bb.segment(6, num_joints) + b_s * h + M_s * thetadotlist); // thetadot
+		//cout << "f" << f << endl;
+		//cout << "b" << b.segment(6, num_joints) << endl;
+		//cout << "fall" << fall << endl;
+		//cout << "Idiff:" << (Iall - A).norm() << endl;
 
-		cout << "Idiff:" << (Iall - A).norm() << endl;
+		//cout << b.segment(6, num_joints) << endl;
+		//cout << endl << fall - b_s << endl;
 		cout << "fdiff" << endl << (b.segment(6, num_joints) + b_s - fall).norm() << endl;
-		cout << "fvmdiff" << endl << (b.segment(6, num_joints) - 4.2 * 4.0 * (fv1 + fv2)).norm() << endl;
-		cout << "accel diff:" << endl << (thetaddot_matlab - x.segment(6, num_joints)).norm() << endl;
+		cout << "b_ccc" << b.segment(6, num_joints) + b_s - fall - b_c.segment(6, num_joints) + bigm * bigl * bigl * fk << endl;
+		//cout << "fvmdiff" << endl << (b_s - 4.2 * 4.0 * (fvm)).norm() << endl;
+		//cout << "accel diff:" << endl << (thetaddot_matlab - x.segment(6, num_joints)).norm() << endl;
 		
 		Vector2d newthetadotlist = thetadotlist + h * x.segment(6, num_joints);
 		newthetadotlist = thetadotlist + h * thetaddot_matlab;
 
-		cout << "output" << endl;
-		cout << thetaddot_matlab << endl;
-		cout << thetadotlist << endl;
+		//cout << "output" << endl;
+		//cout << thetaddot_matlab << endl;
+		//cout << thetadotlist << endl;
 
 		//cout << "velocity diff:" << (xtest.segment(6, num_joints) - newthetadotlist).norm() << endl;
 		//cout << "thetadot diff" << endl << (thetaddot_matlab - (x.segment(6, num_joints) - thetadotlist) / h).norm() << endl;
@@ -269,6 +310,8 @@ void SymplecticIntegrator::step(double h) {
 
 		//MatrixXd Jnew = getGlobalJacobian(thetalist);
 		VectorXd phi = JJ * newthetadotlist;
+		cout << "JJ" << JJ << endl;
+
 		Vector2d thetalistnew;
 		// For QP
 		VectorXd xl, xu; // lower, upper bound 
@@ -355,16 +398,18 @@ void SymplecticIntegrator::step(double h) {
 					thetalistnew(i - 1) = box->getAngle();
 
 					// Don't forget to update twists as well, we will use it to compute forces
-					//box->setTwist(phi.segment<6>(6 * i));
+					box->setTwist(phi.segment<6>(6 * i));
 				}
 			}
-			MatrixXd Jnew = getGlobalJacobian(thetalistnew);
-			VectorXd phi = Jnew * newthetadotlist;
+			//MatrixXd Jnew = getGlobalJacobian(thetalistnew);
+			//cout << "jNEW" << Jnew << endl;
+
+			//VectorXd phi = Jnew * newthetadotlist;
 			for (int i = 0; i < (int)boxes.size(); i++) {
 				auto box = boxes[i];
 				if (i != 0) {				
 					// Don't forget to update twists as well, we will use it to compute forces
-					box->setTwist(phi.segment<6>(6 * (i - 1)));
+					//box->setTwist(phi.segment<6>(6 * (i - 1)));
 				}
 			}
 		}

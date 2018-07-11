@@ -40,6 +40,8 @@ private:
 	Eigen::VectorXd b;
 	Eigen::VectorXd f;
 	Eigen::VectorXd ftest;
+	Eigen::VectorXd f_b;
+	Eigen::VectorXd f_c;
 	double epsilon;
 	bool isReduced;
 	Eigen::Vector3d grav;

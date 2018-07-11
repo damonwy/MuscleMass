@@ -379,6 +379,7 @@ Matrix4d Rigid::integrate(const Matrix4d &E0, const VectorXd &phi, double h)
 
 void Rigid::computeForces() {
 	Matrix6d twist_bracket;
+	//cout << "twist" << twist << endl;
 	twist_bracket.setZero();
 	twist_bracket.block<3, 3>(0, 0) = bracket3(twist.segment<3>(0));
 	twist_bracket.block<3, 3>(3, 3) = bracket3(twist.segment<3>(0));
@@ -387,13 +388,18 @@ void Rigid::computeForces() {
 	Vector6d body_forces;
 	body_forces.setZero();
 	body_forces.segment<3>(3) = m * getR().transpose() * grav;
+	this->body_forces = body_forces;
+	this->coriolis_forces = coriolis_forces;
+
 	this->force = coriolis_forces + body_forces;
+	//cout << "force" << this->force << endl;
 }
 
 Vector6d Rigid::computeTempForces() {
 	
 	// Use E_W_0_temp computed from ODE input theta to get temporary force in that position 
 	// Make sure before using this func, twist is updated to the temporary one
+	//cout << "twist" << twist << endl;
 	Matrix6d twist_bracket;
 	twist_bracket.setZero();
 	twist_bracket.block<3, 3>(0, 0) = bracket3(twist.segment<3>(0));
@@ -405,6 +411,7 @@ Vector6d Rigid::computeTempForces() {
 	Matrix3d R = E_W_0_temp.block<3, 3>(0, 0);
 	body_forces.segment<3>(3) = m * R.transpose() * grav;
 	this->force = coriolis_forces + body_forces;
+	//cout << "forcetemp" << this->force << endl;
 	return this->force;
 }
 

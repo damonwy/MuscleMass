@@ -82,6 +82,8 @@ public:
 
 	Vector6d getTwist() const { return this->twist; }
 	Vector6d getForce() const { return this->force; }
+	Vector6d getCoriolisForce() const { return this->coriolis_forces; }
+	Vector6d getBodyForce() const { return this->body_forces; }
 	Matrix6d getMassMatrix() const { return this->mass_mat; }
 	
 	std::shared_ptr<Rigid> getParent() const { return this->parent; }
@@ -126,6 +128,8 @@ private:
 	Matrix6d mass_mat;
 	Vector6d twist;
 	Vector6d force;
+	Vector6d body_forces;
+	Vector6d coriolis_forces;
 
 	double V;
 	double K;
