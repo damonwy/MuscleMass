@@ -217,6 +217,8 @@ void SymplecticIntegrator::step(double h) {
 		temp1 << 2.0, 1.0, 1.0, 0.0;
 
 		Matrix2d dIdtheta2 = -s2 * (mu2 * l * temp0 + mum / 3.0 * l * r * temp1);
+		dIdtheta2 = -s2 * (mu2 * l * temp0 );
+
 		Vector2d fk = -thetadotlist(1) * dIdtheta2 * thetadotlist;
 		fk(1) = fk(1) + 0.5 * thetadotlist.transpose() * dIdtheta2 * thetadotlist;
 		
@@ -239,6 +241,14 @@ void SymplecticIntegrator::step(double h) {
 			f.segment<6>(6 * i) = box->getForce();
 			f_b.segment<6>(6 * i) = box->getBodyForce();
 			f_c.segment<6>(6 * i) = box->getCoriolisForce();
+			Vector3d omega = box->getTwist().segment<3>(0);
+			Matrix6d twist_bracket;
+			twist_bracket.setZero();
+			twist_bracket.block<3, 3>(0, 0) = Rigid::bracket3(omega.segment<3>(0));
+			twist_bracket.block<3, 3>(3, 3) = Rigid::bracket3(omega.segment<3>(0));
+			VectorXd tettt = twist_bracket * box->getMassMatrix() *box->getTwist();
+			cout << "cof" << tettt << endl;
+
 			ftest.segment<6>(6 * i) = box->getMassMatrix() * box->getTwist() + h * box->getForce();
 			//cout << box->getTwist() << endl;
 		}
@@ -265,6 +275,8 @@ void SymplecticIntegrator::step(double h) {
 		cout << "b_c" << b_c << endl;
 		cout << "fk" << bigm * bigl * bigl * fk << endl;
 		cout << "fv" << bigm * bigl * (fv1 + fv2) << endl;
+
+		cout << "fc" << f_c << endl;
 		
 		// Compute the inertia matrix of spring using finite difference 
 		MatrixXd M_s = Spring::computeMassMatrix(springs, (int)boxes.size(), isReduced);
@@ -274,7 +286,8 @@ void SymplecticIntegrator::step(double h) {
 		//JJ.block<12, 2>(6, 0) = Jtest;
 		A = JJ.transpose() * M * JJ;
 		VectorXd bnew = JJ.transpose() * f;
-		
+		VectorXd bbb = JJ.block<12, 2>(6, 0).transpose() * f_c.segment<12>(6);
+		cout << "bbbfc" << bbb << endl;
 
 		VectorXd bb = J.transpose() * ftest;
 	
