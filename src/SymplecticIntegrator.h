@@ -1,5 +1,4 @@
 #pragma once
-
 #ifndef MUSCLEMASS_SRC_SYMPLECTICINTEGRATOR_H_
 #define MUSCLEMASS_SRC_SYMPLECTICINTEGRATOR_H_
 #include <vector>
@@ -49,5 +48,5 @@ private:
 	int num_samples;	// The number of samples along the muscle lines
 };
 
-#endif // MUSLEMASS_SRC_SYMPLECTICINTEGRATOR
+#endif // MUSLEMASS_SRC_SYMPLECTICINTEGRATOR_H_
 

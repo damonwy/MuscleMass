@@ -1,0 +1,10 @@
+#pragma once
+#ifndef _ML_HARD_CODED_PARAMETRIC_SHAPE_
+#define _ML_HARD_CODED_PARAMETRIC_SHAPE_
+
+
+
+
+
+
+#endif // _ML_HARD_CODED_PARAMETRIC_SHAPE_

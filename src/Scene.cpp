@@ -1,8 +1,9 @@
+#include "Scene.h"
+
 #include <iostream>
 #include <fstream>
-
 #include <json.hpp>
-#include "Scene.h"
+
 #include "Particle.h"
 #include "Shape.h"
 #include "Program.h"
@@ -10,7 +11,6 @@
 #include "WrapSphere.h"
 #include "WrapCylinder.h"
 #include "WrapDoubleCylinder.h"
-
 #include "Joint.h"
 #include "MatlabDebug.h"
 #include "Vector.h"
