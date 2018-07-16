@@ -16,7 +16,7 @@ MLShapeInfo::MLShapeInfo() {
 
 MLFunctionTestShapeInfo::MLFunctionTestShapeInfo(double val) : MLShapeInfo()
 {
-	this->val = val;
+	this->m_val = val;
 }
 
 
@@ -27,7 +27,7 @@ MLError MLFunctionTestShapeInfo::computeDifference(MLShapeInfo *other, double *r
 	{
 		return MLError("error in dynamic casting");
 	}
-	*result = abs(val - otherTest->val);
+	*result = abs(m_val - otherTest->m_val);
 
 	return MLError();
 }
@@ -40,7 +40,7 @@ MLError MLFunctionTestShapeInfo::computeErrorVector(MLShapeInfo *other, Eigen::V
 	{
 		return MLError("error in dynamic casting");
 	}
-	*result = abs(val - otherTest->val) * Eigen::VectorXd::Ones(1);
+	*result = abs(m_val - otherTest->m_val) * Eigen::VectorXd::Ones(1);
 
 	return MLError();
 }
@@ -54,7 +54,7 @@ MLError MLFunctionTestShapeInfo::add(double weight, MLShapeInfo *other)
 	{
 		return MLError("error in dynamic casting");
 	}
-	val += weight*otherTest->val;
+	m_val += weight*otherTest->m_val;
 
 	return MLError();
 }
@@ -66,7 +66,7 @@ MLError MLFunctionTestShapeInfo::getHomeophicMLShapeInfo(MLShapeInfo *source, ML
 	{
 		return MLError("error in dynamic casting");
 	}
-	*result = new MLFunctionTestShapeInfo(this->val);
+	*result = new MLFunctionTestShapeInfo(this->m_val);
 
 	return MLError();
 }
@@ -84,7 +84,7 @@ void MLFunctionTestShapeInfo::addNewPrecomputedPhysics(std::string name, std::ve
 
 void MLFunctionTestShapeInfo::log()
 {
-	cout << "val = " << val << endl;
+	cout << "val = " << m_val << endl;
 }
 
 //---------------------------------------------------

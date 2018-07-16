@@ -7,6 +7,7 @@
 
 class MLBody;
 class MLError;
+class MLPoint;
 
 class MLWrap :public MLObject {
 public:
@@ -19,8 +20,10 @@ public:
 	virtual void init();
 	virtual void draw();
 
+	const std::vector<MLPoint *> * getSamples() const { return &m_samples; }
+
 protected:
-	
+	std::vector<MLPoint *> m_samples;	// sample points along the wrapping
 };
 
 #endif // MUSCLEMASS_SRC_MLWRAP_H_

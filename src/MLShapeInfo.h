@@ -38,7 +38,7 @@ public:
 	void clearAllPhysics() {}
 	void log();
 
-	double val;
+	double m_val;
 };
 
 
