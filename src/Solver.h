@@ -1,5 +1,4 @@
 #pragma once
-#include "TypeDef.h"
 
 #ifndef MUSCLEMASS_SRC_SOLVER_H_
 #define MUSCLEMASS_SRC_SOLVER_H_
@@ -8,6 +7,8 @@
 
 #define EIGEN_DONT_ALIGN_STATICALLY
 #include <Eigen/Dense>
+
+#include "MLCommon.h"
 
 class Rigid;
 class Spring;

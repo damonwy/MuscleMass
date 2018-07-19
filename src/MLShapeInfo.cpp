@@ -124,6 +124,7 @@ MLError MLJointSpaceShapeInfo::computeDifference(MLShapeInfo *other, double *res
 
 MLError MLJointSpaceShapeInfo::computeErrorVector(MLShapeInfo *other, Eigen::VectorXd *result) {
 	// NO NEED?
+	return MLError();
 }
 
 

@@ -9,10 +9,13 @@
 #include "MLCommon.h"
 #include "MLObject.h"
 
+
 class MLRigid;
 class MLWrench;
+class MatrixStack;
+class Program;
 
-class MLBody : public MLObject, public MLRigid {
+class MLBody : public MLObject {
 public:
 	explicit MLBody();
 	virtual ~MLBody();
@@ -26,7 +29,7 @@ public:
 	MLWrench * getExternalForce() { return m_fext; }
 
 	virtual void init();
-	virtual void draw();
+	virtual void draw(std::shared_ptr<MatrixStack> MV, const std::shared_ptr<Program> prog);
 	void update();
 
 	std::string getInfoStr() const;

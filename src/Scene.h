@@ -9,7 +9,7 @@
 #define EIGEN_DONT_ALIGN_STATICALLY
 #include <Eigen/Dense>
 #include <json.hpp>
-#include "TypeDef.h"
+#include "MLCommon.h"
 
 class Particle;
 class MatrixStack;

@@ -35,7 +35,7 @@ MLFunctionTestDerivInfo::MLFunctionTestDerivInfo(double val) : MLDerivInfo() {
 }
 
 MLError MLFunctionTestDerivInfo::add(double weight, MLShapeInfo *other) {
-	MLFunctionTestShapeInfo* otherTest = dynamic_cast<MLFunctionTestShapeInfo*>(other);
+	MLFunctionTestDerivInfo* otherTest = dynamic_cast<MLFunctionTestDerivInfo*>(other);
 	if (!otherTest) {
 		return MLError("error in dynamic casting");
 	}

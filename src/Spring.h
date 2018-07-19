@@ -6,7 +6,7 @@
 
 #define EIGEN_DONT_ALIGN_STATICALLY
 #include <Eigen/Dense>
-#include "TypeDef.h"
+#include "MLCommon.h"
 
 class Program;
 class MatrixStack;

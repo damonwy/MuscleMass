@@ -5,6 +5,8 @@
 
 #include "MLError.h"
 #include "MLWorld.h"
+#include "MatrixStack.h"
+#include "Program.h"
 
 using json = nlohmann::json;
 
@@ -18,7 +20,7 @@ MLObject::~MLObject() {
 
 }
 
-MLError MLObject::load(const json &elem, MLWorld */*world*/, const std::string &/*folder*/) {
+MLError MLObject::load(const json &elem, std::shared_ptr<MLWorld> world, const std::string &/*folder*/) {
 	try{
 		m_name = elem.at("name").get<std::string>();
 		m_uid = elem.at("uid").get<int>();

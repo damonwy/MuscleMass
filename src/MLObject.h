@@ -9,6 +9,8 @@
 
 class MLError;
 class MLWorld;
+class MatrixStack;
+class Program;
 
 class MLObject {
 public:
@@ -16,9 +18,9 @@ public:
 	virtual ~MLObject();
 
 	virtual void init() {}
-	virtual void draw() const {}
+	virtual void draw(std::shared_ptr<MatrixStack> MV, const std::shared_ptr<Program> prog) const {}
 
-	virtual MLError load(const nlohmann::json &elem, MLWorld *world, const std::string &folder);
+	virtual MLError load(const nlohmann::json &elem, std::shared_ptr<MLWorld> world, const std::string &folder);
 	virtual void save(std::ofstream &ofs) const;
 
 	std::string getName() const { return m_name; }
