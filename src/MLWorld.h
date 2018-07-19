@@ -1,5 +1,6 @@
 #pragma once
-
+#ifndef MUSCLEMASS_SRC_MLWORLD_H_
+#define MUSCLEMASS_SRC_MLWORLD_H_
 
 
 #include <map>
@@ -46,3 +47,5 @@ protected:
 	MapBodyUID m_bodyUID;
 
 };
+
+#endif // MUSCLEMASS_SRC_MLWORLD_H_

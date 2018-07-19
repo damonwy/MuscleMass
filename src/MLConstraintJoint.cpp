@@ -58,11 +58,11 @@ int MLConstraintJoint::getMatBtoJ(Eigen::Matrix4d *bToJ) const {
 
 
 unsigned int MLConstraintJoint::getNumRowsBilateral() const {
-	return 0;
+	return m_rows.size();
 }
 
 unsigned int MLConstraintJoint::getNumColsDof() const {
-	return 0;
+	return 6;
 }
 
 int MLConstraintJoint::detectCollisions(
