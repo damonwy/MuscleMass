@@ -7,9 +7,10 @@
 
 class MLBody;
 class MLWorld;
+class Shape;
 
 
-class MLComp : public MLObject {
+class MLComp : public MLObject, public std::enable_shared_from_this<MLComp> {
 public:
 	explicit MLComp(std::shared_ptr<MLBody> parent);
 	virtual ~MLComp();
@@ -18,7 +19,7 @@ public:
 	virtual void save(std::ofstream &ofs);
 
 	virtual void init();
-	virtual void draw(std::shared_ptr<MatrixStack> MV, const std::shared_ptr<Program> prog);
+	virtual void draw(std::shared_ptr<MatrixStack> MV, const std::shared_ptr<Program> prog, std::shared_ptr<MatrixStack> P);
 
 	std::shared_ptr<MLBody> getParent() const { return m_parent; }
 	const Eigen::Matrix4d * getTransformLocal() const { return &m_cToP; }
@@ -28,6 +29,7 @@ public:
 
 protected:
 	std::shared_ptr<MLBody> m_parent;
+	std::shared_ptr<Shape> m_shape;
 	Eigen::Matrix4d m_cToP; // transform wrt parent
 	// MLPolygon m_polygon;
 	std::vector<int> m_collisions;

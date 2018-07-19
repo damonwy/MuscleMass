@@ -1,4 +1,4 @@
-#include "MLCompSphere.h"
+#include "MLCompCylinder.h"
 
 #include <iostream>
 #include <fstream>
@@ -14,18 +14,19 @@ using namespace std;
 using namespace Eigen;
 using json = nlohmann::json;
 
-MLCompSphere::MLCompSphere(std::shared_ptr<MLBody> parent) : MLComp(parent){
+MLCompCylinder::MLCompCylinder(std::shared_ptr<MLBody> parent) : MLComp(parent) {
 
 }
 
-MLCompSphere::~MLCompSphere() {
+MLCompCylinder::~MLCompCylinder() {
 
 }
 
-MLError MLCompSphere::load(const json &elem, std::shared_ptr<MLWorld> world, const std::string &folder) {
+MLError MLCompCylinder::load(const json &elem, std::shared_ptr<MLWorld> world, const std::string &folder) {
 	auto error = MLComp::load(elem, world, folder);
-	try {	
+	try {
 		m_radius = elem.at("radius").get<double>();
+		m_height = elem.at("height").get<double>();
 	}
 	catch (json::exception& e) {
 		// output exception information
@@ -36,10 +37,10 @@ MLError MLCompSphere::load(const json &elem, std::shared_ptr<MLWorld> world, con
 	return MLError();
 }
 
-void MLCompSphere::draw(std::shared_ptr<MatrixStack> MV, const std::shared_ptr<Program> prog, std::shared_ptr<MatrixStack> P) const {
+void MLCompCylinder::draw(std::shared_ptr<MatrixStack> MV, const std::shared_ptr<Program> prog, std::shared_ptr<MatrixStack> P) const {
 
 }
 
-void MLCompSphere::save(std::ofstream &ofs) {
+void MLCompCylinder::save(std::ofstream &ofs) {
 
 }

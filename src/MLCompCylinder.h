@@ -5,11 +5,11 @@
 #include "MLComp.h"
 
 
-class MLCompSphere : public MLComp
+class MLCompCylinder : public MLComp
 {
 public:
-	explicit MLCompSphere(std::shared_ptr<MLBody> parent);
-	virtual ~MLCompSphere();
+	explicit MLCompCylinder(std::shared_ptr<MLBody> parent);
+	virtual ~MLCompCylinder();
 
 	virtual void draw(std::shared_ptr<MatrixStack> MV, const std::shared_ptr<Program> prog, std::shared_ptr<MatrixStack> P) const;
 
@@ -17,9 +17,11 @@ public:
 	virtual void save(std::ofstream &ofs);
 
 	double getRadius() const { return m_radius; }
+	double getHeight() const { return m_height; }
 
 protected:
 	double m_radius;
+	double m_height;
 };
 
 #endif // MUSCLEMASS_SRC_MLCOMPSPHERE_H_
