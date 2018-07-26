@@ -19,10 +19,9 @@ MLFunctionTestShapeInfo::MLFunctionTestShapeInfo(double val) : MLShapeInfo()
 	this->m_val = val;
 }
 
-
-MLError MLFunctionTestShapeInfo::computeDifference(MLShapeInfo *other, double *result)
+MLError MLFunctionTestShapeInfo::computeDifference(shared_ptr<MLShapeInfo> other, double *result)
 {
-	MLFunctionTestShapeInfo* otherTest = dynamic_cast<MLFunctionTestShapeInfo*>(other);
+	auto otherTest = std::dynamic_pointer_cast<MLFunctionTestShapeInfo>(other);
 	if (!otherTest)
 	{
 		return MLError("error in dynamic casting");
@@ -33,9 +32,9 @@ MLError MLFunctionTestShapeInfo::computeDifference(MLShapeInfo *other, double *r
 }
 
 
-MLError MLFunctionTestShapeInfo::computeErrorVector(MLShapeInfo *other, Eigen::VectorXd *result)
+MLError MLFunctionTestShapeInfo::computeErrorVector(shared_ptr<MLShapeInfo> other, Eigen::VectorXd *result)
 {
-	MLFunctionTestShapeInfo* otherTest = dynamic_cast<MLFunctionTestShapeInfo*>(other);
+	auto otherTest = std::dynamic_pointer_cast<MLFunctionTestShapeInfo>(other);
 	if (!otherTest)
 	{
 		return MLError("error in dynamic casting");
@@ -45,11 +44,10 @@ MLError MLFunctionTestShapeInfo::computeErrorVector(MLShapeInfo *other, Eigen::V
 	return MLError();
 }
 
-
-
-MLError MLFunctionTestShapeInfo::add(double weight, MLShapeInfo *other)
+MLError MLFunctionTestShapeInfo::add(double weight, std::shared_ptr<MLShapeInfo> other)
 {
-	MLFunctionTestShapeInfo* otherTest = dynamic_cast<MLFunctionTestShapeInfo*>(other);
+	auto otherTest = std::dynamic_pointer_cast<MLFunctionTestShapeInfo>(other);
+	
 	if (!otherTest)
 	{
 		return MLError("error in dynamic casting");
@@ -59,9 +57,9 @@ MLError MLFunctionTestShapeInfo::add(double weight, MLShapeInfo *other)
 	return MLError();
 }
 
-MLError MLFunctionTestShapeInfo::getHomeophicMLShapeInfo(MLShapeInfo *source, MLShapeInfo **result)
+MLError MLFunctionTestShapeInfo::getHomeophicMLShapeInfo(std::shared_ptr<MLShapeInfo> source, MLShapeInfo **result)
 {
-	MLFunctionTestShapeInfo* sourceTest = dynamic_cast<MLFunctionTestShapeInfo*>(source);
+	auto sourceTest = std::dynamic_pointer_cast<MLFunctionTestShapeInfo>(source);
 	if (!sourceTest)
 	{
 		return MLError("error in dynamic casting");
@@ -102,14 +100,16 @@ MLJointSpaceShapeInfo::~MLJointSpaceShapeInfo() {
 }
 
 
-MLJointSpaceShapeInfo::MLJointSpaceShapeInfo(MLJointSpaceShapeInfo* other, double weight) {
-	MLJointSpaceShapeInfo* otherJS = dynamic_cast<MLJointSpaceShapeInfo*>(other);
+MLJointSpaceShapeInfo::MLJointSpaceShapeInfo(std::shared_ptr<MLShapeInfo> other, double weight) {
+
+	auto otherJS = std::dynamic_pointer_cast<MLJointSpaceShapeInfo>(other);
 	m_js_vals = weight * otherJS->m_js_vals;
 }
 
 
-MLError MLJointSpaceShapeInfo::computeDifference(MLShapeInfo *other, double *result) {
-	MLJointSpaceShapeInfo* otherJS = dynamic_cast<MLJointSpaceShapeInfo*>(other);
+MLError MLJointSpaceShapeInfo::computeDifference(std::shared_ptr<MLShapeInfo> other, double *result) {
+	auto otherJS = std::dynamic_pointer_cast<MLJointSpaceShapeInfo>(other);
+	
 	if (!otherJS) {
 		return MLError("error in dynamic casting");
 	}
@@ -122,14 +122,15 @@ MLError MLJointSpaceShapeInfo::computeDifference(MLShapeInfo *other, double *res
 	return MLError();
 }
 
-MLError MLJointSpaceShapeInfo::computeErrorVector(MLShapeInfo *other, Eigen::VectorXd *result) {
+MLError MLJointSpaceShapeInfo::computeErrorVector(std::shared_ptr<MLShapeInfo> other, Eigen::VectorXd *result) {
 	// NO NEED?
 	return MLError();
 }
 
 
-MLError MLJointSpaceShapeInfo::add(double weight, MLShapeInfo *other) {
-	MLJointSpaceShapeInfo* otherJS = dynamic_cast<MLJointSpaceShapeInfo*>(other);
+MLError MLJointSpaceShapeInfo::add(double weight, std::shared_ptr<MLShapeInfo> other) {
+
+	auto otherJS = std::dynamic_pointer_cast<MLJointSpaceShapeInfo>(other);
 	if (!otherJS) {
 		return MLError("error in dynamic casting");
 	}

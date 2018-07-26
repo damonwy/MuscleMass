@@ -11,6 +11,7 @@
 class MLComp;
 class MLBody;
 class MLConstraint;
+class MLError;
 
 
 class MLWorld {

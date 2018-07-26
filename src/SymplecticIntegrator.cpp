@@ -17,6 +17,8 @@
 #include "Scene.h"
 #include "Program.h"
 #include "MatrixStack.h"
+#include "MLShapeInfo.h"
+#include "MLError.h"
 
 #include <iostream>
 #include <iomanip>
@@ -164,6 +166,14 @@ void SymplecticIntegrator::step(double h) {
 	x.setZero();
 	b.setZero();
 	M.setZero();
+
+	// Test shapeinfo
+	std::shared_ptr<MLFunctionTestShapeInfo> test0 = make_shared<MLFunctionTestShapeInfo>(1.5);
+	std::shared_ptr<MLFunctionTestShapeInfo> test1 = make_shared<MLFunctionTestShapeInfo>(3.5);
+	double result;
+	test0->computeDifference(test1, &result);
+	cout << "result" << result << endl;
+
 
 	// Solve linear system
 	if (isReduced) {

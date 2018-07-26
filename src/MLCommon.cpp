@@ -28,6 +28,6 @@ Eigen::Matrix4d glm_to_eigen(const glm::mat4 &m) {
 	const float *_m = glm::value_ptr(m);
 	float m_cp[4 * 4];
 	memcpy(m_cp, _m, sizeof(m_cp));
-	Eigen::Map<Eigen::Matrix3f> result(m_cp);
+	Eigen::Map<Eigen::Matrix4f> result(m_cp);
 	return result.cast<double>();
 }

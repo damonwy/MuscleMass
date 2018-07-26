@@ -14,10 +14,10 @@ class MLShapeInfo {
 public:
 	MLShapeInfo();
 	virtual ~MLShapeInfo() {};
-	virtual MLError computeDifference(MLShapeInfo *other, double *result) = 0;
-	virtual MLError computeErrorVector(MLShapeInfo *other, Eigen::VectorXd *result) = 0;
-	virtual MLError add(double weight, MLShapeInfo *other) = 0;
-	virtual MLError getHomeophicMLShapeInfo(MLShapeInfo *source, MLShapeInfo **result) = 0;
+	virtual MLError computeDifference(std::shared_ptr<MLShapeInfo> other, double *result) = 0;
+	virtual MLError computeErrorVector(std::shared_ptr<MLShapeInfo> other, Eigen::VectorXd *result) = 0;
+	virtual MLError add(double weight, std::shared_ptr<MLShapeInfo> other) = 0;
+	virtual MLError getHomeophicMLShapeInfo(std::shared_ptr<MLShapeInfo> source, MLShapeInfo **result) = 0;
 	virtual MLError addBoundaryConditions(bool useForceAngle) = 0;
 	virtual void addNewPrecomputedPhysics(std::string name, std::vector<double> &values) = 0;
 	virtual void clearAllPhysics() = 0;
@@ -28,11 +28,10 @@ public:
 class MLFunctionTestShapeInfo: public MLShapeInfo {
 public:
 	MLFunctionTestShapeInfo(double val);
-	
-	MLError computeDifference(MLShapeInfo *other, double *result);
-	MLError computeErrorVector(MLShapeInfo *other, Eigen::VectorXd *result);
-	MLError add(double weight, MLShapeInfo *other);
-	MLError getHomeophicMLShapeInfo(MLShapeInfo *source, MLShapeInfo **result);
+	MLError computeDifference(std::shared_ptr<MLShapeInfo> other, double *result);
+	MLError computeErrorVector(std::shared_ptr<MLShapeInfo> other, Eigen::VectorXd *result);
+	MLError add(double weight, std::shared_ptr<MLShapeInfo> other);
+	MLError getHomeophicMLShapeInfo(std::shared_ptr<MLShapeInfo> source, MLShapeInfo **result);
 	MLError addBoundaryConditions(bool useForceAngle);
 	void addNewPrecomputedPhysics(std::string name, std::vector<double> &values);
 	void clearAllPhysics() {}
@@ -47,10 +46,10 @@ public:
 	MLJointSpaceShapeInfo();
 	MLJointSpaceShapeInfo(const nlohmann::json &elem);
 	~MLJointSpaceShapeInfo();
-	MLJointSpaceShapeInfo(MLJointSpaceShapeInfo* other, double weight);
-	MLError computeDifference(MLShapeInfo *other, double *result);
-	MLError computeErrorVector(MLShapeInfo *other, Eigen::VectorXd *result);
-	MLError add(double weight, MLShapeInfo *other);
+	MLJointSpaceShapeInfo(std::shared_ptr<MLShapeInfo> other, double weight);
+	MLError computeDifference(std::shared_ptr<MLShapeInfo> other, double *result);
+	MLError computeErrorVector(std::shared_ptr<MLShapeInfo> other, Eigen::VectorXd *result);
+	MLError add(double weight, std::shared_ptr<MLShapeInfo> other);
 	void log();
 	void clear();
 
