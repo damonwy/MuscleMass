@@ -51,12 +51,12 @@ public:
 
 	MLError getBasisType(MLBasisFunction::MLBasisFunctionType *type);
 	void setShapeInfo(std::shared_ptr<MLShapeInfo> shapeInfo);
-
+	void addBasisFunction(std::shared_ptr<MLBasisFunction> basisFunction);
 	void log();
 private:
 	Eigen::VectorXd m_center_;
 	std::shared_ptr<MLShapeInfo> m_shapeInfo_;
-	std::unordered_map<MLBasisFunctionKey, std::shared_ptr<MLBasisFunction>> m_basisFunctions;
+	std::unordered_map<MLBasisFunctionKey, std::shared_ptr<MLBasisFunction>> m_basisFunctions_;
 
 };
 

@@ -31,7 +31,7 @@ public:
 	void setWeightToZero();
 	void setWeight(double weight);
 	void addWeight(double val);
-	bool isEqual(MLBasisFunction* other);
+	bool isEqual(std::shared_ptr<MLBasisFunction> other);
 	bool checkRegionOverlap(const std::vector<double> &uncoveredRegion);
 	MLError refineAllDirections(std::vector<MLBasisFunction*> *basisFunctions);
 	MLError checkIsCoveredByCells(const std::vector<MLAdaptiveGridCell*> &adjacentCells, const MLParametricShape* paramShape);
@@ -43,9 +43,9 @@ public:
 	static MLError newFromCopyKey(const MLBasisFunctionKey & basisFunctionKey, double weight, MLBasisFunction** result);
 
 protected:
-	Eigen::VectorXd m_center;
-	Eigen::VectorXd m_support;
-	double m_weight;
+	Eigen::VectorXd m_center_;
+	Eigen::VectorXd m_support_;
+	double m_weight_;
 };
 
 class MLLinearBSpline : public MLBasisFunction
