@@ -6,6 +6,8 @@
 #include <Eigen\Dense>
 #include <vector>
 #include <unordered_map>
+#include <memory>
+#include <string>
 
 #include "MLBasisFunction.h"
 
@@ -13,6 +15,7 @@ class MLShapeInfo;
 class MLError;
 class MLBasisFunction;
 class MLParametricShape;
+struct MLBasisFunctionKey;
 // class MLAdaptiveGridCell;
 
 class GroupFunctionInfo {
@@ -46,7 +49,7 @@ public:
 
 	MLError getInterpolationWeight(const Eigen::VectorXd pos, double * result);
 	MLError getDerivInterpolationWeight(const Eigen::VectorXd pos, int direction, double * result);
-	Eigen::VectorXd& getCenter();
+	//Eigen::VectorXd& getCenter();
 	std::shared_ptr<MLShapeInfo> getShapeInfo();
 
 	MLError getBasisType(MLBasisFunction::MLBasisFunctionType *type);
@@ -56,7 +59,7 @@ public:
 private:
 	Eigen::VectorXd m_center_;
 	std::shared_ptr<MLShapeInfo> m_shapeInfo_;
-	std::unordered_map<MLBasisFunctionKey, std::shared_ptr<MLBasisFunction>> m_basisFunctions_;
+	//std::unordered_map<MLBasisFunctionKey, std::shared_ptr<MLBasisFunction>> m_basisFunctions_;
 
 };
 

@@ -7,11 +7,11 @@
 
 void GroupFunctionInfo::add(std::shared_ptr<MLPrecomputedSample> sample, double weight) {
 	if (!m_initialized) {
-		m_centerSum = sample->getCenter() * weight;
-		m_initialized = true;
+		//m_centerSum = sample->getCenter() * weight;
+		//m_initialized = true;
 	}
 	else {
-		m_centerSum += sample->getCenter() * weight;
+		//m_centerSum += sample->getCenter() * weight;
 	}
 	m_weightSum += weight;
 }
@@ -40,8 +40,8 @@ void MLPrecomputedSample::setShapeInfo(std::shared_ptr<MLShapeInfo> shapeInfo) {
 void MLPrecomputedSample::log() {
 	std::cout << "Precomputed sample:" << std::endl;
 	std::cout << "center : " << m_center_.transpose() << std::endl;
-	for (auto basisFunction : m_basisFunctions_)
+	/*for (auto basisFunction : m_basisFunctions_)
 	{
 		basisFunction.second->log();
-	}
+	}*/
 }
