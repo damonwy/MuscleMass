@@ -303,6 +303,24 @@ Matrix6d Rigid::adjoint(const Matrix4d &E)
 	return Ad;
 }
 
+Matrix6d Rigid::dAddt(const Matrix4d &E, const VectorXd &phi) {
+	Matrix6d dA;
+	dA.setZero();
+	Matrix3d R = E.block<3, 3>(0, 0);
+	Vector3d p = E.block<3, 1>(0, 3);
+	Vector3d w = phi.segment<3>(0);
+	Vector3d v = phi.segment<3>(3);
+	Matrix3d wbrac = bracket3(w);
+	Matrix3d vbrac = bracket3(v);
+	Matrix3d pbrac = bracket3(p);
+	Matrix3d Rwbrac = R * wbrac;
+	dA.block<3, 3>(0, 0) = Rwbrac;
+	dA.block<3, 3>(3, 3) = Rwbrac;
+	dA.block<3, 3>(3, 0) = R * vbrac + pbrac * Rwbrac;
+
+	return dA;
+}
+
 Matrix3d Rigid::bracket3(const Vector3d &a)
 {
 	Matrix3d A = Matrix3d::Zero();

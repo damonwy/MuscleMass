@@ -20,6 +20,7 @@ public:
 	void step(double h);
 	void draw(std::shared_ptr<MatrixStack> MV, const std::shared_ptr<Program> prog, std::shared_ptr<MatrixStack> P) const;
 	Eigen::MatrixXd getJ_twist_thetadot();
+	Eigen::MatrixXd getJdot(Eigen::VectorXd thetadotlist);
 	Eigen::MatrixXd getGlobalJacobian(Eigen::VectorXd thetalist);
 	virtual ~SymplecticIntegrator();
 
@@ -35,6 +36,7 @@ private:
 	Eigen::MatrixXd A;
 	Eigen::MatrixXd M;
 	Eigen::MatrixXd J;
+	Eigen::MatrixXd Jdot;
 	Eigen::VectorXd x;
 	Eigen::VectorXd b;
 	Eigen::VectorXd f;

@@ -15,7 +15,7 @@
 	"isCylinder":false,
 	"isDoubleCylinder":false,
 	"num_points_on_arc": 30,
-	"num_samples_on_muscle": 10000,
+	"num_samples_on_muscle": 1000000,
 	"cylinder_radius": 0.5,
 	"plot_steps": 3000,
 	"grav": [0.0, -9.81, 0.0],

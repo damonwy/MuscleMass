@@ -59,6 +59,7 @@ Spring::Spring(shared_ptr<Particle> p0, shared_ptr<Particle> p1, double _mass, i
 }
 
 void Spring::step(vector<shared_ptr<Joint>> joints) {
+	
 	computeLength();
 	updateSamplesPosition();
 	updateSamplesJacobian(joints);
@@ -192,15 +193,17 @@ void Spring::updateSamplesJacobian(vector<shared_ptr<Joint>> joints) {
 		}
 
 		// Check with the formula
-		/*auto check_s = samples[10];
+		auto check_s = samples[10];
 		double s = check_s->s;
 		Matrix2d check_J;
 		check_J << -4.0 * sin(theta(0)) - 0.4 *sin(theta(0) + theta(1)), -0.4 * sin(theta(0) + theta(1)),
 			4.0 * cos(theta(0)) + 0.4 * cos(theta(0) + theta(1)), 0.4 * cos(theta(0) + theta(1));
 		check_J *= s;
 
-		cout << "should be: " << check_J << endl;
-		cout << "mine reslt:" << check_s->getJacobianMatrix() << endl;*/
+		//cout << "should be: " << check_J << endl;
+		//cout << "mine reslt:" << check_s->getJacobianMatrix() << endl;
+
+		//cout << "DIFFFF:" << (check_J - check_s->getJacobianMatrix()).norm() << endl;
 		// Jacobian is correct.
 
 	}
@@ -296,7 +299,6 @@ void Spring::computeEnergy() {
 MatrixXd Spring::computeMassMatrix(vector<shared_ptr<Spring> > springs, int num_boxes, bool isReduced) {
 	if (isReduced) {
 		
-
 		int n = num_boxes - 1;
 		MatrixXd M_s(n, n);
 		M_s.setZero();
@@ -304,14 +306,12 @@ MatrixXd Spring::computeMassMatrix(vector<shared_ptr<Spring> > springs, int num_
 		for (int i = 0; i < (int)springs.size(); ++i) {
 			auto spring = springs[i];
 
-			/*auto b0 = spring->p0->getParent();
+			auto b0 = spring->p0->getParent();
 			auto b1 = spring->p1->getParent();
 
 			Vector2d theta;
 			theta(0) = b0->getAngle();
 			theta(1) = b1->getAngle();
-*/
-
 
 			auto samples = spring->getSamples();
 
@@ -326,14 +326,17 @@ MatrixXd Spring::computeMassMatrix(vector<shared_ptr<Spring> > springs, int num_
 			}
 
 			// Check if the inertia of the muscle is the same 
-			/*Matrix2d checkIm;
+			Matrix2d checkIm;
 			double l = 4.0; 
 			double r = l * 0.1;
 			checkIm << l * l + r * r + 2 * l * r * cos(theta(1)), r *r + l *r* cos(theta(1)),
 				r * r + l * r * cos(theta(1)), r * r;
 			checkIm *= 4.2 / 3.0;
 			cout << "computed:"<< M_s << endl;
-			cout << "shouldbe:" << checkIm << endl;*/
+			cout << "shouldbe:" << checkIm << endl;
+			cout << "DIFF" << (M_s - checkIm).norm() << endl;
+
+
 			// the inertia of the muscle is correct
 		}
 		return M_s;

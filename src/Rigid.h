@@ -99,6 +99,7 @@ public:
 	static Eigen::Vector3d unbracket3(const Eigen::Matrix3d &A);
 	static Vector6d unbracket6(const Eigen::Matrix4d &A);
 	static Eigen::Matrix4d integrate(const Eigen::Matrix4d &E0, const Eigen::VectorXd &phi, double h);
+	static Matrix6d dAddt(const Eigen::Matrix4d &E, const Eigen::VectorXd &phi);
 
 	double r; // radius
 	double m; // mass
