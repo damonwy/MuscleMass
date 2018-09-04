@@ -369,7 +369,7 @@ void Scene::step()
 				//this->phi.segment<6>(6 * (i - 1)) = boxes[i]->getTwist();
 			}
 		}
-		//MatrixXd jj = symplectic_solver->getJ_twist_thetadot();
+		//MatrixXd jj = symplectic_solver->getJ();
 		for (int i = 0; i < (int)springs.size(); ++i) {
 			springs[i]->step(joints);
 		}
