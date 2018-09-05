@@ -90,7 +90,7 @@ void Scene::load(const string &RESOURCE_DIR)
 	box2->setSphereStatus(js["isSphere"]);
 
 	if (time_integrator == SYMPLECTIC) {
-		symplectic_solver = make_shared<SymplecticIntegrator>(boxes, joints, springs, js["isReduced"], js["num_samples_on_muscle"], js["grav"], js["epsilon"]);
+		symplectic_solver = make_shared<SymplecticIntegrator>(boxes, joints, springs, js["isReduced"], js["isMuscle"], js["num_samples_on_muscle"], js["grav"], js["epsilon"]);
 	}
 	else if (time_integrator == RKF45) {
 		rkf45_solver = make_shared<RKF45Integrator>(boxes, springs, js["isReduced"]);
