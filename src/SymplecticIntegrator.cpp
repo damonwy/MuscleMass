@@ -169,8 +169,8 @@ Eigen::MatrixXd SymplecticIntegrator::getJdot(VectorXd thetadotlist) {
 	Jdot.setZero();
 	MatrixXd JJ = J.block(0, n - num_joints, m, num_joints);
 	VectorXd Phi = JJ * thetadotlist;
-	cout << "Phi:" << Phi << endl;
-	cout << "J: "<< endl <<JJ << endl;
+	//cout << "Phi:" << Phi << endl;
+	//cout << "J: "<< endl <<JJ << endl;
 
 	for (int i = 1; i < (int)boxes.size(); i++) {
 		
@@ -202,7 +202,7 @@ Eigen::MatrixXd SymplecticIntegrator::getJdot(VectorXd thetadotlist) {
 		}
 	}
 
-	cout << "Jdot" << Jdot << endl;
+	//cout << "Jdot" << Jdot << endl;
 	return Jdot;
 }
 
@@ -292,8 +292,8 @@ void SymplecticIntegrator::step(double h) {
 		// Input
 		VectorXd thetadotlist = Joint::getThetadotVector(joints);
 		VectorXd thetalist = Joint::getThetaVector(joints);
-		cout << "thetadot:" << thetadotlist << endl;
-		cout << "theta:" << thetalist << endl;
+		//cout << "thetadot:" << thetadotlist << endl;
+		//cout << "theta:" << thetalist << endl;
 
 
 		// Matlab Solution
@@ -367,7 +367,7 @@ void SymplecticIntegrator::step(double h) {
 		J = getJ();
 		// TODO GET JDOT
 		Jdot = getJdot(thetadotlist);
-		//cout << "Jdot" << endl << Jdot << endl;
+		
 
 		A = J.transpose() * M * J;
 		b = J.transpose() * f;
@@ -401,25 +401,23 @@ void SymplecticIntegrator::step(double h) {
 			
 		VectorXd b_qvv = JJ.transpose() * M * Jdot.block<18, 2>(0, 6) * thetadotlist;
 
-		//x.segment(6, num_joints) = A.ldlt().solve(b.segment(6, num_joints) + b_s);	// thetaddot (bring back)
-		x.segment(6, num_joints) = A.ldlt().solve(b.segment(6, num_joints) + b_s - b_qvv);	// thetaddot
+		x.segment(6, num_joints) = A.ldlt().solve(b.segment(6, num_joints) + b_s);	// thetaddot (bring back)
+		//x.segment(6, num_joints) = A.ldlt().solve(b.segment(6, num_joints) + b_s - b_qvv);	// thetaddot
 
 		//cout << endl << fall - b_s << endl;
 
-		cout << "fdiff" << endl << (b.segment(6, num_joints) + b_s - b_qvv - fall).norm() << endl;
-		cout << "fk_matlab: " << fk_matlab << endl;
-		cout << "b_qvv: " << b_qvv << endl;
-
-		//cout << "fdiff" << endl << (b.segment(6, num_joints) + b_s - fall).norm() << endl;
-		cout << b.segment(6, num_joints) + b_s - b_qvv - fall << endl;
+		//cout << "fdiff" << endl << (b.segment(6, num_joints) + b_s - b_qvv - fall).norm() << endl;
+		//cout << b.segment(6, num_joints) + b_s - b_qvv - fall << endl;
 		
-		//cout << fall << endl;
+		//cout << "fk_matlab - b_qvv: " << endl << fk_matlab + b_qvv << endl;
+		//cout << "fk_matlab: " << fk_matlab << endl;
+		//cout << "b_qvv: " << b_qvv << endl;
 
 
 		//cout << "accel diff:" << endl << (thetaddot_matlab - x.segment(6, num_joints)).norm() << endl;
 		
 		Vector2d newthetadotlist = thetadotlist + h * x.segment(6, num_joints);
-		newthetadotlist = thetadotlist + h * thetaddot_matlab;
+		//newthetadotlist = thetadotlist + h * thetaddot_matlab;
 
 		//cout << thetaddot_matlab << endl;
 		//cout << thetadotlist << endl;
@@ -519,10 +517,7 @@ void SymplecticIntegrator::step(double h) {
 					box->setTwist(phi.segment<6>(6 * i));
 				}
 			}
-			//MatrixXd Jnew = getGlobalJacobian(thetalistnew);
-			//cout << "jNEW" << Jnew << endl;
-
-			//VectorXd phi = Jnew * newthetadotlist;
+			
 			for (int i = 0; i < (int)boxes.size(); i++) {
 				auto box = boxes[i];
 				if (i != 0) {				
@@ -580,29 +575,40 @@ void SymplecticIntegrator::step(double h) {
 		double kk = 0.5 * boxtwists.transpose() * M * boxtwists;
 		//cout << "kk_n" << kk << endl;
 
-		MatrixXd M_s = Spring::computeMassMatrix(springs, (int)boxes.size(), isReduced);
+		MatrixXd M_s = A.block(0, 0, 6 * (int)boxes.size(), 6 * (int)boxes.size());
+		M_s.setZero();
+		VectorXd b_s = b.segment(0, 6 * (int)boxes.size());
+		b_s.setZero();
+
+		if (isMuscle) {
+			M_s = Spring::computeMassMatrix(springs, (int)boxes.size(), isReduced);
+			b_s = Spring::computeGravity(springs, (int)boxes.size(), isReduced);
+		}
+		else {
+			M_s.setZero();
+			b_s.setZero();
+		}
 
 		// Add mass matrix of spring to A matrix
 		A.block(0, 0, 6 * (int)boxes.size(), 6 * (int)boxes.size()) += M_s;
 
-		VectorXd b_s = Spring::computeGravity(springs, (int)boxes.size(), isReduced);
 		b.segment(0, 6 * (int)boxes.size()) += A.block(0, 0, 6 * (int)boxes.size(), 6 * (int)boxes.size()) * boxtwists + b_s * h;
 
 		x = A.ldlt().solve(b);
-		
-		MatrixXd AA(22, 22);
+		//
+		//MatrixXd AA(22, 22);
 
-		AA.setZero();
-		AA.block<12, 12>(0, 0) = M.block<12, 12>(0, 0);
-		AA.block<5, 6>(12, 0) = A.block<5, 6>(24, 6);
-		AA.block<5, 12>(17, 0) = A.block<5, 12>(29, 6);
-		AA.block<6, 5>(0, 12) = A.block<5, 6>(24, 6).transpose();
-		AA.block<12, 5>(0, 17) = A.block<5, 12>(29, 6).transpose();
+		//AA.setZero();
+		//AA.block<12, 12>(0, 0) = M.block<12, 12>(0, 0);
+		//AA.block<5, 6>(12, 0) = A.block<5, 6>(24, 6);
+		//AA.block<5, 12>(17, 0) = A.block<5, 12>(29, 6);
+		//AA.block<6, 5>(0, 12) = A.block<5, 6>(24, 6).transpose();
+		//AA.block<12, 5>(0, 17) = A.block<5, 12>(29, 6).transpose();
 	
-		VectorXd xxxx = AA.ldlt().solve(b.segment<22>(6));
+		//VectorXd xxxx = AA.ldlt().solve(b.segment<22>(6));
 
-		double kkk = 0.5 * x.segment<18>(0).transpose() * M * x.segment<18>(0);
-		
+		//double kkk = 0.5 * x.segment<18>(0).transpose() * M * x.segment<18>(0);
+		//
 
 		// Update boxes
 		for (int i = 0; i < (int)boxes.size(); i++) {
